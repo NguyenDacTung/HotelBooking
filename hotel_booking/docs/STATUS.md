@@ -1,4 +1,15 @@
-# TETRA Hotel — đợt tích hợp 18/10/2026
+# TETRA Hotel — hồ sơ, sinh trắc và dữ liệu quay báo cáo 18/10/2026
+
+- Sửa lỗi 404: tìm kiếm/quote/tạo đơn/đặt hộ/đổi phòng/xác nhận nay cùng chặn phòng còn DANG_O/CHO_THANH_TOAN, không tự mở theo ngày trả dự kiến. Đã tái hiện API trước sửa và kiểm tra sau nạp; giữ nguyên các đơn/hóa đơn đang có. Backend mới nhất **102/102 đạt**, database chính không đổi trong kiểm thử. Xem [nguyên nhân và bằng chứng](room_404_availability_fix.md).
+- Hồ sơ dùng một avatar; đăng nhập vân tay thay email/mật khẩu, bỏ khóa phiên sau đăng nhập. Chủ máy đã xác thực cảm biến thật thành công. Migration 0008 thêm public-key/challenge, có sao lưu và kiểm tra dữ liệu cũ nguyên vẹn.
+- Lượt Flutter mới 42/42 đạt, analyze không lỗi. Kiểm thử ảnh thật phát hiện tọa độ crop lệch sau reset; đã sửa bằng tọa độ vùng ảnh đang hiển thị, build/cài lại APK và nghiệm thu preview/lưu ảnh MA 468×468 trên máy thật. Góp ý có ảnh chú thích cũng đã gửi và kiểm tra quyền private. Backend có 98 ca khác nhau đạt qua lượt đầy đủ và lượt unit sửa kỳ vọng metadata; chi tiết trung thực trong báo cáo hồ sơ.
+- Theo yêu cầu chủ dự án, đã thêm trực tiếp vào `hotel_booking`: 12 phòng/23 ảnh, 6 khách/1 lễ tân, 22 đơn và 9 đánh giá. Có pg_dump trước khi thêm và kiểm tra từng bản ghi cũ không đổi; seed lặp không trùng. Không dùng bộ QA làm dữ liệu chính.
+- Đã chạy kịch bản bằng UI SM A135F: khách đặt 411 → lễ tân xác nhận/nhận phòng → minibar 40.000 → thu 990.000 → trả phòng → dọn → khách đánh giá → quản lý xem báo cáo PDF. Lượt thử giữ lại 1 đơn/1 khoản thu/1 đánh giá mới. Hiện có 34 phòng, 62 ảnh phòng, 15 tài khoản, 30 đơn, 10 đánh giá; 411 đã sẵn sàng.
+- Word và thao tác: [Kịch bản](KICH_BAN_QUAY_TIEN_DO_TETRA.md); [Dữ liệu/sao lưu](recording_data.md); [Hồ sơ/vân tay và giới hạn](profile_biometric_acceptance.md). Dịch vụ OAuth/SMTP/FCM/merchant chưa cấu hình; không coi dữ liệu thu mẫu là giao dịch ngoài thực.
+
+---
+
+# Đợt tích hợp trước đó trong ngày 18/10/2026
 
 - Đã thêm đánh giá sau trả phòng thực tế, quản trị ẩn/hiện, Drawer dùng chung theo vai trò, cài đặt cá nhân/hệ thống và capabilities công khai an toàn.
 - Thêm chuỗi ảnh crop/preview/avatar, CSV preview/confirm, PDF preview, lịch phòng/timeline, bản đồ, QR tra cứu, khóa phiên thiết bị, góp ý có ảnh riêng và video cấu hình.

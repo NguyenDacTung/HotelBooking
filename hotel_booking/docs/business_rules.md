@@ -39,7 +39,7 @@ Tham khảo: [Vinpearl – quy định đặt phòng](https://vinpearl.com/en/re
 ## Phòng, ảnh và đề xuất
 
 - DANG_O/CHO_THANH_TOAN là DANG_SU_DUNG, kể cả quá ngày trả dự kiến. Phiếu giữ tương lai là DA_DAT_TRUOC. Tách khỏi vệ sinh/vận hành.
-- Đề xuất không chứa cả hai nhóm; còn lọc kinh doanh/sức chứa/lịch ngừng. Tìm thông thường xét giao ngày; nhận thực tế vẫn phải chờ khách trước trả và dọn phòng.
+- Đề xuất không chứa cả hai nhóm; còn lọc kinh doanh/sức chứa/lịch ngừng. Tìm thông thường vẫn xét giao ngày với các phiếu giữ lịch, nhưng luôn loại phòng còn khách DANG_O/CHO_THANH_TOAN, kể cả ngày trả dự kiến đã qua hoặc đang tìm ngày tương lai. Báo giá/tạo đơn/đặt hộ/đổi phòng/xác nhận cũng chặn phòng chưa hoàn tất trả; không đợi đến nhận phòng mới báo lỗi. Đây là chính sách bảo thủ hiện tại: chỉ mở lại khả năng đặt sau khi khách cũ hoàn tất trả. Nhận thực tế vẫn phải chờ dọn xong.
 - Ảnh thuộc anh_phong.ma_phong, loại không có ảnh; tiện nghi theo loại. Thêm phòng: lưu rồi chọn ảnh ngay trong luồng; sửa phòng có nút quản lý ảnh. JPEG/PNG/WebP ≤5 MiB, một bìa/phòng, khóa phòng khi đổi bìa.
 - Migration giữ bảng ảnh cũ ở anh_loai_phong_legacy, chép liên kết cho từng phòng. Seed thay ảnh lưu metadata anh_phong_archive, giữ file cũ; chạy lại không nhân bản danh mục/ảnh.
 - Loại mới: Standard Single/Double/Twin, Superior Double/Twin, Deluxe King/Twin, Family Quad, Junior/Executive Suite; không đổi loại các phòng cũ. Giá TTTP tự thiết lập.

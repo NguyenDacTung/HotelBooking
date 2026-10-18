@@ -4,6 +4,7 @@ Trong app dùng tên **TETRA**, nhãn Android **TETRA Hotel**; applicationId v�
 
 - [Màn hình và điểm vào](docs/screens.md) · [Quyết định điều chỉnh đặc tả](docs/integration_decisions.md) · [Thư viện/phiên bản](docs/integration_inventory.md) · [Ánh xạ học phần](docs/course_mapping.md)
 - [Cấu hình dịch vụ ngoài](docs/external_configuration.md) · [Nghiệm thu và phần chưa kiểm thử](docs/integration_acceptance.md)
+- [Kịch bản quay tiến độ](docs/KICH_BAN_QUAY_TIEN_DO_TETRA.md) · [Kịch bản Word](artifacts/TETRA_KICH_BAN_QUAY_TIEN_DO.docx) · [Dữ liệu bổ sung và sao lưu](docs/recording_data.md) · [Nghiệm thu hồ sơ/vân tay mới](docs/profile_biometric_acceptance.md)
 - Tất cả lý do là tùy chọn; nhận/trả phòng không còn hộp yêu cầu lý do. Quyền, trạng thái đơn, phụ thu và đối chiếu công nợ vẫn được kiểm tra.
 
 Chạy từ thư mục chứa `pubspec.yaml`:

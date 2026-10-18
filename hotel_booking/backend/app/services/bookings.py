@@ -25,6 +25,15 @@ def room_type(db, room):
                      .with_for_update(read=True).execution_options(populate_existing=True))
 
 
+def physical_stay_exists(room_id, exclude_booking=None):
+    """Expected departure does not release a room before physical checkout."""
+    query = exists().where(Booking.ma_phong == room_id,
+        Booking.trang_thai.in_(('DANG_O', 'CHO_THANH_TOAN')))
+    if exclude_booking is not None:
+        query = query.where(Booking.ma_pdp != exclude_booking)
+    return query
+
+
 def conflict(db, room_id, start, end, exclude_closure=None):
     booking = db.scalar(select(exists().where(Booking.ma_phong == room_id,
         Booking.trang_thai.in_(HOLD), Booking.ngay_nhan < end, Booking.ngay_tra > start)))
@@ -37,7 +46,8 @@ def conflict(db, room_id, start, end, exclude_closure=None):
 
 def check_room(db, room, kind, stay):
     validate_stay(stay.ngay_nhan, stay.ngay_tra, stay.so_khach, kind.suc_chua)
-    return room.dang_kinh_doanh and kind.dang_kinh_doanh and not conflict(
+    return room.dang_kinh_doanh and kind.dang_kinh_doanh and not db.scalar(
+        select(physical_stay_exists(room.ma_phong))) and not conflict(
         db, room.ma_phong, stay.ngay_nhan, stay.ngay_tra)
 
 
@@ -90,6 +100,8 @@ def transition(db, key, user, action, reason=None):
     refreshed = principal(db, user['account'])
     new = next_state(booking.trang_thai, action, booking.ngay_nhan,
                      refreshed['role'], booking.ma_kh == user['account'].id)
+    if action == 'confirm' and db.scalar(select(physical_stay_exists(booking.ma_phong, booking.ma_pdp))):
+        fail(409, 'ROOM_OCCUPIED', 'Phòng đang có khách chưa hoàn tất trả phòng. Hãy đổi phòng hoặc hoàn tất lượt lưu trú trước.')
     if action=='cancel':
         from app.services.stays import now,VN,add_auto
         from datetime import time,timedelta

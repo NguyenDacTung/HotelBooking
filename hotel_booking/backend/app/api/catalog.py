@@ -1,11 +1,11 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, exists, or_
+from sqlalchemy import select, func, exists
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models import Room, RoomType, Booking, Closure, HOLD, Amenity, TypeAmenity, RoomImage
 from app.schemas.requests import Stay
-from app.services.bookings import get_or_404, check_room
+from app.services.bookings import get_or_404, check_room, physical_stay_exists
 from app.services.rules import validate_stay
 from app.services.rules import today
 from app.core.errors import fail
@@ -43,8 +43,7 @@ def room_out(db, room, internal=False):
                         .order_by(RoomImage.la_anh_bia.desc(), RoomImage.thu_tu, RoomImage.ma_anh))]
     occupied = db.scalar(select(exists().where(Booking.ma_phong == room.ma_phong,
         Booking.trang_thai.in_(HOLD), Booking.ngay_tra > today())))
-    staying = db.scalar(select(exists().where(Booking.ma_phong == room.ma_phong,
-        Booking.trang_thai.in_(('DANG_O','CHO_THANH_TOAN')))))
+    staying = db.scalar(select(physical_stay_exists(room.ma_phong)))
     from app.api.reviews import summary
     cached=db.info.get('review_summary',{})
     data['danh_gia']=cached.get(room.ma_phong) or summary(db,[room.ma_phong])[room.ma_phong]
@@ -75,6 +74,7 @@ def available(ngay_nhan: date, ngay_tra: date, so_khach: int = Query(ge=1), ma_l
     if gia_min is not None and gia_max is not None and gia_min > gia_max:
         fail(422, 'VALIDATION_ERROR', 'Khoảng giá không hợp lệ')
     query = public_rooms().where(RoomType.suc_chua >= so_khach,
+        ~physical_stay_exists(Room.ma_phong),
         ~exists().where(Booking.ma_phong == Room.ma_phong, Booking.trang_thai.in_(HOLD),
                        Booking.ngay_nhan < ngay_tra, Booking.ngay_tra > ngay_nhan),
         ~exists().where(Closure.ma_phong == Room.ma_phong, Closure.dang_hieu_luc.is_(True),
@@ -93,8 +93,9 @@ def recommended(ngay_nhan: date, ngay_tra: date, so_khach: int = Query(ge=1),
                 page_size: int = Query(6, ge=1, le=12), db: Session = Depends(get_db)):
     validate_stay(ngay_nhan, ngay_tra, so_khach)
     query = public_rooms().where(RoomType.suc_chua >= so_khach,
+        ~physical_stay_exists(Room.ma_phong),
         ~exists().where(Booking.ma_phong == Room.ma_phong, Booking.trang_thai.in_(HOLD),
-                        or_(Booking.ngay_tra > today(), Booking.trang_thai.in_(('DANG_O', 'CHO_THANH_TOAN')))),
+                        Booking.ngay_tra > today()),
         ~exists().where(Closure.ma_phong == Room.ma_phong, Closure.dang_hieu_luc.is_(True),
                         Closure.tu_ngay < ngay_tra, Closure.den_ngay > ngay_nhan))
     return page_result(db, query.order_by(RoomType.gia_co_ban, Room.ma_phong),

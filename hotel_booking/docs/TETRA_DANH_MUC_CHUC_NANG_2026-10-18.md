@@ -148,7 +148,7 @@ Nút chỉ hiện hoặc cho bấm khi đúng vai trò và trạng thái. Backen
 ## 3.4. Tích hợp công cụ và cài đặt
 | Mã | Phần mới | Chức năng nhỏ và trạng thái |
 | --- | --- | --- |
-| MOI34 | Avatar | Chọn thư viện/chụp, căn/cắt, xem trước, xác nhận upload, URL ảnh mới; có khôi phục ảnh picker dang dở sau Android hủy tiến trình. Chưa nghiệm thu đủ trên điện thoại. |
+| MOI34 | Avatar | Chọn thư viện/chụp, căn/cắt, xem trước, xác nhận upload, URL ảnh mới; có khôi phục ảnh picker dang dở. Đã nghiệm thu chọn ảnh thư viện → kéo/reset/căn lại → preview/lưu trên SM A135F, sửa lệch crop bằng tọa độ ảnh hiển thị. Camera/hủy tiến trình còn chưa đủ. |
 | MOI35 | Crop ảnh phòng | Dùng chung chuỗi chọn/chụp → căn → xem → xác nhận; giới hạn 5 MiB; hủy không tự gửi ảnh. |
 | MOI36 | Lịch phòng | Chọn phòng, lịch tháng và thanh ngày đồng bộ; hiển thị phiếu giữ/lịch ngừng, ngày trả không chiếm đêm; chạm đơn mở chi tiết, quay lại tải lại lịch. |
 | MOI37 | QR của khách | Mã tham chiếu TETRA:1:UUID trong chi tiết đơn, không chứa mật khẩu/token/thông tin khách. |
@@ -463,11 +463,11 @@ Luồng phòng sau trả: Cần dọn dẹp → Đang dọn dẹp → Sẵn sàn
 | Mã | Phần cần kiểm thử | Đã có bằng chứng đến đâu |
 | --- | --- | --- |
 | KT01 | Camera quét QR | Nhập mã tay/tra cứu đã thử; chưa nghiệm thu camera đọc QR, đổi camera/đèn pin/từ chối quyền trong mọi trạng thái. |
-| KT02 | Avatar/ảnh phòng crop | Upload/quyền/giới hạn API có kiểm thử; chưa thao tác đủ chọn/chụp/crop/cancel/Android mất tiến trình trên điện thoại. |
-| KT03 | Ảnh góp ý có chú thích | Widget và bảo mật ảnh private được thử; điện thoại mới gửi text, chưa hoàn tất chụp/chú thích/xem/bỏ/gửi ảnh thật. |
+| KT02 | Avatar/ảnh phòng crop | Avatar thư viện → kéo/reset/preview/căn lại/lưu đã đạt trên máy, có đối chiếu pixel và ảnh hồ sơ. Camera, crop ảnh phòng với đủ tỷ lệ/hủy, Android mất tiến trình và thao tác pinch hai ngón trên máy chưa được nghiệm thu đầy đủ. |
+| KT03 | Ảnh góp ý có chú thích | Đã chụp, vẽ chú thích, xem trước và gửi ảnh trên SM A135F; ảnh có nét vẽ, lưu private, không đăng nhập 401/chủ 200. Chưa nghiệm thu hết các tổ hợp bỏ ảnh, chụp lại, xoay máy và Android hủy tiến trình. |
 | KT04 | Nhập CSV trọn luồng | Hộp chọn Android đã mở/hủy, preview/confirm API đã thử; chưa chọn CSV rồi xác nhận nhập từ điện thoại. |
 | KT05 | GPS/khoảng cách/chỉ đường | Bản đồ/ghim đã hiển thị; chưa nghiệm thu đủ xin/từ chối quyền, GPS tắt và khoảng cách thực tế/ứng dụng chỉ đường. |
-| KT06 | Khóa sinh trắc/mã khóa | Có mã khóa phiên và giới hạn JWT; chưa nghiệm thu OS đầy đủ bằng phương thức của chủ máy. |
+| KT06 | Đăng nhập vân tay | Chủ máy đã đăng ký và đăng nhập thật không nhập email/mật khẩu, backend cấp JWT mới; đã bỏ khóa phiên. Chưa thay đổi bộ vân tay/PIN của OS để thử vô hiệu hóa khóa, không coi kiểm thử server là thao tác OS. |
 | KT07 | Nhắc lịch đúng giờ khi nền | ID/logic có test; chưa đo giao thông báo khi Doze, khởi động lại, đổi múi giờ và giới hạn pin Samsung. |
 | KT08 | Phạm vi UI tổng thể | Có QA tiêu biểu, không khẳng định mọi nút/mọi tổ hợp/mọi điện thoại đã được thao tác thủ công. Các kiểm thử API không thay cho thử UI tương ứng. |
 
@@ -506,12 +506,13 @@ Những mục dưới đây là đề xuất mới để chủ dự án chọn, 
 
 # 7. Bằng chứng, nguồn và vận hành
 ## 7.1. Kết quả đã có
-- Backend: 88 ca trong lượt đầy đủ và một ca outbox retry/backoff riêng, tổng 89 ca khác nhau; PostgreSQL thật/hotel_booking_test, không thay SQLite.
-- Flutter: lượt đầy đủ cuối 34/34 đạt; dart analyze lib test không có lỗi; APK ARM debug build/cài thành công trên SM A135F.
+- Backend mới nhất: 97 đạt trong lượt đầy đủ, 1 kiểm tra metadata cũ sai số bảng; sửa kỳ vọng rồi chạy lại 16/16 unit đạt. Tổng 98 ca khác nhau đã đạt; PostgreSQL thật/hotel_booking_test, không thay SQLite.
+- Flutter mới nhất: lượt đầy đủ 42/42 đạt, có kiểm tra pixel crop và đăng nhập vân tay; APK ARM debug trên SM A135F. Trạng thái analyze/build/nghiệm thu cuối xem docs/profile_biometric_acceptance.md.
 - QA nghiệp vụ trước đợt tích hợp: đăng ký/đăng nhập, xác nhận cùng ngày, nhận phòng, thêm minibar, yêu cầu trả, ghi thu và hoàn tất trả; phát hiện/sửa dialog lỗi sau request thành công.
 - QA tích hợp hôm nay trên điện thoại: gửi đánh giá 4 sao cho đơn đã trả thật; admin ẩn với lý do rỗng; kiểm tra công khai không còn đánh giá và chủ vẫn thấy bản ẩn.
 - Gửi góp ý text và admin đổi Đang xử lý; chọn lịch phòng có đơn; tra cứu mã nhập tay; render PDF tiếng Việt; mở/hủy picker CSV; sửa bản đồ 403 và xác nhận bản đồ/ghim thật.
 - QA dùng dữ liệu test riêng. Sau QA đã đăng xuất tài khoản thử, đưa backend về hotel_booking, đối chiếu dữ liệu không đổi. health/db và tải phòng từ điện thoại HTTP 200 qua Wi-Fi, không adb reverse.
+- Sau đó chủ dự án yêu cầu thêm dữ liệu gốc để quay: đã sao lưu và thêm 12 phòng/23 ảnh, 6 khách/1 lễ tân, 22 đơn/9 đánh giá; không thay bản ghi cũ. Đã chạy kịch bản trên hotel_booking qua UI bằng các tài khoản mới, giữ thêm 1 đơn/1 khoản thu/1 đánh giá. Kịch bản và kết quả ở docs/KICH_BAN_QUAY_TIEN_DO_TETRA.md; không lẫn giai đoạn này với QA cách ly trước đó.
 
 Các con số kiểm thử không phải số chức năng, cũng không chứng minh đã thử mọi trường hợp thủ công. Không ghi mật khẩu/token trong tài liệu này.
 

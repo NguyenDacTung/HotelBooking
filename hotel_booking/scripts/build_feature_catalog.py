@@ -67,8 +67,8 @@ def table(rows: list[list[str]]) -> str:
     return '<w:tbl>' + props + grid + ''.join(result) + '</w:tbl>' + paragraph('', 'Spacer')
 
 
-def build() -> None:
-    lines = SOURCE.read_text(encoding='utf8').splitlines()
+def build(source: Path = SOURCE, output: Path = OUTPUT, *, catalogue: bool = True) -> None:
+    lines = source.read_text(encoding='utf8').splitlines()
     body: list[str] = []
     i = 0
     while i < len(lines):
@@ -152,26 +152,32 @@ def build() -> None:
              'word/document.xml': document, 'word/styles.xml': styles,
              'word/_rels/document.xml.rels': rels, 'word/header1.xml': header,
              'word/footer1.xml': footer, 'docProps/core.xml': core}
-    OUTPUT.parent.mkdir(exist_ok=True)
-    with ZipFile(OUTPUT, 'w', ZIP_DEFLATED) as archive:
+    if not catalogue:
+        header = header.replace('DANH MỤC CHỨC NĂNG &amp; NGHIỆP VỤ', 'KỊCH BẢN QUAY BÁO CÁO TIẾN ĐỘ')
+        core = core.replace('Danh mục chức năng và luồng nghiệp vụ', 'Kịch bản quay báo cáo tiến độ')
+        core = core.replace('Chức năng cũ/mới, hướng dẫn thao tác, phần chưa sẵn sàng và đề xuất.',
+                            'Thao tác quay báo cáo tiến độ và kết quả chạy thử trên điện thoại.')
+        parts['word/header1.xml'] = header
+        parts['docProps/core.xml'] = core
+    output.parent.mkdir(exist_ok=True)
+    with ZipFile(output, 'w', ZIP_DEFLATED) as archive:
         for name, content in parts.items():
             ET.fromstring(content)  # Validate every generated XML part before packaging.
             archive.writestr(name, content.encode('utf8'))
-    with ZipFile(OUTPUT) as archive:
+    with ZipFile(output) as archive:
         assert archive.testzip() is None
         tree = ET.fromstring(archive.read('word/document.xml'))
         texts = [n.text or '' for n in tree.iter(f'{{{W}}}t')]
         all_text = '\n'.join(texts)
-        for prefix, count in [('CU', 37), ('MOI', 60), ('CHO', 15), ('KT', 8), ('DX', 19)]:
+        for prefix, count in ([('CU', 37), ('MOI', 60), ('CHO', 15), ('KT', 8), ('DX', 19)] if catalogue else []):
             for number in range(1, count + 1):
                 assert re.search(r'\b' + prefix + f'{number:02}' + r'\b', all_text), (prefix, number)
         flows = [t for t in texts if re.match(r'^L\d{2}\. ', t)]
-        assert len(flows) == 35, len(flows)
+        if catalogue: assert len(flows) == 35, len(flows)
         assert '\ufffd' not in all_text
-        assert all_text.count('Đăng nhập') > 3
-    print(f'Created: {OUTPUT.relative_to(ROOT)}')
-    print(f'Validated: 37 existing + 60 additions/changes; 35 flows; 15 pending; 8 device QA items; 19 proposals.')
-    print(f'Word package: {OUTPUT.stat().st_size:,} bytes; {len(list(tree.iter(f"{{{W}}}tbl")))} tables.')
+        assert 'TETRA' in all_text
+    print(f'Created: {output.relative_to(ROOT)}')
+    print(f'Word package: {output.stat().st_size:,} bytes; {len(list(tree.iter(f"{{{W}}}tbl")))} tables. XML/ZIP validated.')
 
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@ import 'package:crop_your_image/crop_your_image.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'common.dart';
+import '../services/visible_image_cropper.dart';
 
 Future<Uint8List?> chooseCroppedImage(
   BuildContext context, {
@@ -100,6 +101,7 @@ class ImageCropScreen extends StatefulWidget {
 
 class _CropState extends State<ImageCropScreen> {
   final controller = CropController();
+  final visibleCropper = VisibleImageCropper();
   bool busy = false, ready = false;
   Uint8List? preview;
   int revision = 0;
@@ -166,6 +168,9 @@ class _CropState extends State<ImageCropScreen> {
                   key: ValueKey(revision),
                   image: widget.bytes,
                   controller: controller,
+                  imageCropper: visibleCropper,
+                  onMoved: (rect, _) => visibleCropper.cropRect = rect,
+                  onImageMoved: (rect) => visibleCropper.imageRect = rect,
                   interactive: true,
                   fixCropRect: widget.avatar,
                   cornerDotBuilder: widget.avatar
