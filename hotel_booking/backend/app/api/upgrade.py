@@ -16,7 +16,7 @@ from app.services.bookings import get_or_404, lock_room, conflict
 from app.services.payments import record, balance
 from app.services.rules import today
 
-router = APIRouter(tags=['TTTP'])
+router = APIRouter(tags=['TETRA'])
 admin = permission('accounts.manage')
 
 
@@ -104,7 +104,7 @@ def operations(tang: int | None = None, ma_lp: int | None = None, tinh_trang: st
             Closure.ma_phong==room.ma_phong,Closure.dang_hieu_luc.is_(True),Closure.den_ngay>today()).order_by(Closure.tu_ngay))]
         result['lich_dat'] = [{'ngay_nhan':b.ngay_nhan,'ngay_tra':b.ngay_tra,'trang_thai':b.trang_thai}
             for b in db.scalars(select(Booking).where(Booking.ma_phong==room.ma_phong,
-            Booking.trang_thai.in_(('CHO_XAC_NHAN','DA_XAC_NHAN')),Booking.ngay_tra>today()).order_by(Booking.ngay_nhan))]
+            Booking.trang_thai.in_(('CHO_XAC_NHAN','DA_XAC_NHAN','DANG_O','CHO_THANH_TOAN')),Booking.ngay_tra>today()).order_by(Booking.ngay_nhan))]
         return result
     return page_result(db,query.order_by(Room.ma_phong),page,page_size,out)
 
@@ -113,6 +113,8 @@ def operations(tang: int | None = None, ma_lp: int | None = None, tinh_trang: st
 def change_operation(key: int, data: OperationEdit, user=Depends(permission('rooms.operations')),db: Session = Depends(get_db)):
     room = lock_room(db,key)
     old, new = room.tinh_trang_van_hanh, data.tinh_trang_van_hanh
+    if db.scalar(select(Booking.ma_pdp).where(Booking.ma_phong==key,Booking.trang_thai.in_(('DANG_O','CHO_THANH_TOAN'))).limit(1)):
+        fail(409,'ROOM_OCCUPIED','Khách chưa trả phòng; chưa thể chuyển phòng sang dọn dẹp/bảo trì')
     transitions = {'SAN_SANG':'CAN_DON_DEP','CAN_DON_DEP':'DANG_DON_DEP','DANG_DON_DEP':'SAN_SANG','BAO_TRI':'SAN_SANG'}
     if new != 'BAO_TRI' and transitions.get(old) != new:
         fail(409,'STATE_CONFLICT','Không thể chuyển tình trạng phòng theo thứ tự này')

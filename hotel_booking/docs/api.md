@@ -33,7 +33,7 @@ Chạy backend và mở `/docs` hoặc `/openapi.json` để xem đầy đủ re
 | GET | `/staff/room-closures` | Closures |
 | POST | `/staff/room-closures` | Create Closure |
 | PATCH | `/staff/room-closures/{key}` | Patch Closure |
-| POST | `/staff/room-types/{key}/images` | Upload |
+| POST | `/staff/rooms/{key}/images` | Upload |
 | PATCH | `/staff/images/{key}` | Patch Image |
 | DELETE | `/staff/images/{key}` | Delete Image |
 | GET | `/health` | Health |
@@ -52,3 +52,24 @@ Tạo/hủy và /bookings/my: KHACH_HANG. Chi tiết phiếu: chủ sở hữu h
 Upload multipart field `file`, thêm `thu_tu` và `la_anh_bia` tùy chọn; giới hạn 5 MiB, kiểm tra nội dung JPEG/PNG/WebP. PUT tập tiện nghi nhận `{ma_tn: [1,2]}` không trùng. PATCH kỳ ngừng không nhận ma_phong; dừng kỳ bằng dang_hieu_luc=false.
 
 Nguồn quy tắc: [business_rules.md](business_rules.md). Đặc tả đầy đủ: [DAC_TA_CODEX_HOTEL_BOOKING.md](DAC_TA_CODEX_HOTEL_BOOKING.md).
+
+
+## Nâng cấp lưu trú và tài khoản — 18/10/2026
+
+| Method | API | Quyền / ý nghĩa |
+| --- | --- | --- |
+| GET | `/hotel/policy` | Công khai, chính sách và trạng thái cấu hình dịch vụ |
+| POST | `/staff/bookings` | Lễ tân/quản lý đặt hộ khách bằng email và liên hệ |
+| PATCH | `/staff/bookings/{id}/amend` | Đổi phòng/ngày trước nhận, chưa có giao dịch tiền; kiểm tra giá dự kiến |
+| PATCH | `/staff/bookings/{id}/cancel` | Hủy hộ khách, bắt buộc lý do |
+| POST | `/staff/bookings/{id}/check-in` | Nhận phòng đúng ngày, phòng sẵn sàng |
+| POST | `/bookings/{id}/request-checkout` | Chủ phiếu/lễ tân lập và làm mới hóa đơn trả phòng |
+| POST | `/staff/bookings/{id}/check-out` | Trả phòng, chặn khi còn thu/hoàn |
+| POST | `/staff/bookings/{id}/no-show` | Đánh dấu khách không đến sau ngày đến |
+| POST | `/staff/bookings/{id}/charges` | Thêm phụ thu, UUID chống trùng |
+| POST | `/admin/charges/{id}/void` | Quản lý hủy phụ thu có lý do trước hoàn tất |
+| POST | `/auth/forgot-password` | Gửi mã qua SMTP; 503 khi chưa cấu hình |
+| POST | `/auth/reset-password` | email + ma_xac_nhan + mat_khau; thu hồi JWT cũ |
+| POST / DELETE | `/devices` | Gắn/hủy token thiết bị vào tài khoản/phiên đang xác thực |
+
+Ảnh chỉ upload theo phòng. `/room-types` không còn hinh_anh; `/rooms` và `/staff/rooms` trả hinh_anh của từng phòng. Booking chi tiết có phu_thu, chinh_sach, nhat_ky, nhan_phong_luc, tra_phong_luc, giu_cho_den, tien_phong, tong_phu_thu, tong_thanh_toan và số dư. GET quote có chinh_sach để khách đọc trước khi đặt. Không có endpoint gateway thanh toán giả.

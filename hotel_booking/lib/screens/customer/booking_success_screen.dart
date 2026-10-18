@@ -22,10 +22,7 @@ class BookingSuccessScreen extends StatelessWidget {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Đã gửi yêu cầu',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: ListView(
@@ -43,9 +40,9 @@ class BookingSuccessScreen extends StatelessWidget {
           Text(
             TttpStrings.sent,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF123A52),
-                ),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF123A52),
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -70,8 +67,8 @@ class BookingSuccessScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Chip(
-                    backgroundColor:
-                        const Color(0xFFB58A45).withValues(alpha: 0.14),
+                    backgroundColor: const Color(0xFFB58A45)
+                        .withValues(alpha: 0.14),
                     side: BorderSide.none,
                     labelStyle: const TextStyle(
                       color: Color(0xFFB58A45),
@@ -101,10 +98,10 @@ class BookingSuccessScreen extends StatelessWidget {
                   Text(
                     'Giá chốt: ${money(booking.total)}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF123A52),
-                          fontSize: 18,
-                        ),
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF123A52),
+                      fontSize: 18,
+                    ),
                   ),
                 ],
               ),
@@ -128,10 +125,7 @@ class BookingSuccessScreen extends StatelessWidget {
               ),
               child: const Text(
                 'Xem chi tiết',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
               ),
             ),
           ),
@@ -149,10 +143,7 @@ class BookingSuccessScreen extends StatelessWidget {
               onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
               child: const Text(
                 'Về trang chủ',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
             ),
           ),

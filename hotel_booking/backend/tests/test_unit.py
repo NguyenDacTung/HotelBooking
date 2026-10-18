@@ -45,17 +45,19 @@ def test_mass_assignment_rejected(field, value):
 def test_normalization_preserves_password():
     obj = Register(email='  Guest@EXAMPLE.com ', mat_khau='  password  ', ho_ten=' A ')
     assert obj.email == 'guest@example.com' and obj.mat_khau == '  password  ' and obj.ho_ten == 'A'
-    with pytest.raises(ValidationError):
-        Reject(ly_do='   ')
+    assert Reject(ly_do='   ').ly_do == ''
+    assert Reject().ly_do == ''
 
 
 def test_transition_permissions_and_cutoff():
+    assert next_state('CHO_XAC_NHAN','confirm',today(),'LE_TAN',False) == 'DA_XAC_NHAN'
+    assert next_state('CHO_XAC_NHAN','cancel',today(),'KHACH_HANG',True) == 'DA_HUY'
     tomorrow = today() + timedelta(days=1)
     assert next_state('CHO_XAC_NHAN','confirm',tomorrow,'LE_TAN',False) == 'DA_XAC_NHAN'
     assert next_state('DA_XAC_NHAN','cancel',tomorrow,'KHACH_HANG',True) == 'DA_HUY'
     for old, action, arrival, role, owner, expected in [
         ('DA_HUY','cancel',tomorrow,'KHACH_HANG',True,409),
-        ('CHO_XAC_NHAN','cancel',today(),'KHACH_HANG',True,400),
+        
         ('CHO_XAC_NHAN','cancel',tomorrow,'KHACH_HANG',False,404),
         ('CHO_XAC_NHAN','confirm',tomorrow,'KHACH_HANG',True,403),
         ('DA_XAC_NHAN','reject',tomorrow,'QUAN_LY',False,409)]:
@@ -71,7 +73,8 @@ def test_password_hash():
 
 
 def test_postgresql_metadata():
-    assert len(Base.metadata.tables) == 16
+    assert len(Base.metadata.tables) == 27
+    assert {'thiet_bi_sinh_trac', 'thu_thach_sinh_trac'} <= Base.metadata.tables.keys()
     sql = str(CreateTable(Base.metadata.tables['phieu_dat_phong']).compile(dialect=postgresql.dialect()))
     assert 'EXCLUDE USING gist' in sql and 'daterange' in sql
 

@@ -1,6 +1,6 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, exists
+from sqlalchemy import select, func, exists, or_
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models import Room, RoomType, Booking, Closure, HOLD, Amenity, TypeAmenity, RoomImage
@@ -15,7 +15,11 @@ router = APIRouter(tags=['Phòng'])
 
 def page_result(db, query, page, page_size, serialize):
     total = db.scalar(select(func.count()).select_from(query.order_by(None).subquery()))
-    return {'items': [serialize(row) for row in db.scalars(query.offset((page - 1) * page_size).limit(page_size))],
+    rows=list(db.scalars(query.offset((page - 1) * page_size).limit(page_size)))
+    if rows and isinstance(rows[0],Room):
+        from app.api.reviews import summary
+        db.info['review_summary']=summary(db,[r.ma_phong for r in rows])
+    return {'items': [serialize(row) for row in rows],
             'page': page, 'page_size': page_size, 'total': total}
 
 
@@ -29,17 +33,22 @@ def columns(obj):
 def type_out(db, kind):
     data = columns(kind)
     data['tien_nghi'] = [columns(a) for a in db.scalars(select(Amenity).join(TypeAmenity).where(TypeAmenity.ma_lp == kind.ma_lp))]
-    data['hinh_anh'] = [columns(i) for i in db.scalars(select(RoomImage).where(RoomImage.ma_lp == kind.ma_lp)
-                        .order_by(RoomImage.la_anh_bia.desc(), RoomImage.thu_tu, RoomImage.ma_anh))]
     return data
 
 
 def room_out(db, room, internal=False):
     data = type_out(db, db.get(RoomType, room.ma_lp))
     data.update({k: v for k, v in columns(room).items() if internal or k != 'ghi_chu'})
+    data['hinh_anh'] = [columns(i) for i in db.scalars(select(RoomImage).where(RoomImage.ma_phong == room.ma_phong)
+                        .order_by(RoomImage.la_anh_bia.desc(), RoomImage.thu_tu, RoomImage.ma_anh))]
     occupied = db.scalar(select(exists().where(Booking.ma_phong == room.ma_phong,
         Booking.trang_thai.in_(HOLD), Booking.ngay_tra > today())))
-    data['trang_thai_su_dung'] = 'DANG_SU_DUNG' if occupied else 'CON_TRONG'
+    staying = db.scalar(select(exists().where(Booking.ma_phong == room.ma_phong,
+        Booking.trang_thai.in_(('DANG_O','CHO_THANH_TOAN')))))
+    from app.api.reviews import summary
+    cached=db.info.get('review_summary',{})
+    data['danh_gia']=cached.get(room.ma_phong) or summary(db,[room.ma_phong])[room.ma_phong]
+    data['trang_thai_su_dung'] = 'DANG_SU_DUNG' if staying else 'DA_DAT_TRUOC' if occupied else 'CON_TRONG'
     return data
 
 
@@ -85,7 +94,7 @@ def recommended(ngay_nhan: date, ngay_tra: date, so_khach: int = Query(ge=1),
     validate_stay(ngay_nhan, ngay_tra, so_khach)
     query = public_rooms().where(RoomType.suc_chua >= so_khach,
         ~exists().where(Booking.ma_phong == Room.ma_phong, Booking.trang_thai.in_(HOLD),
-                        Booking.ngay_tra > today()),
+                        or_(Booking.ngay_tra > today(), Booking.trang_thai.in_(('DANG_O', 'CHO_THANH_TOAN')))),
         ~exists().where(Closure.ma_phong == Room.ma_phong, Closure.dang_hieu_luc.is_(True),
                         Closure.tu_ngay < ngay_tra, Closure.den_ngay > ngay_nhan))
     return page_result(db, query.order_by(RoomType.gia_co_ban, Room.ma_phong),
@@ -102,9 +111,10 @@ def detail(room_id: int, db: Session = Depends(get_db)):
 
 @router.post('/rooms/{room_id}/quote')
 def quote(room_id: int, data: Stay, db: Session = Depends(get_db)):
+    from app.services.stays import policy
     room = get_or_404(db, Room, room_id)
     kind = db.get(RoomType, room.ma_lp)
     usable = check_room(db, room, kind, data)
     nights = (data.ngay_tra - data.ngay_nhan).days
     return {'ma_phong': room_id, **data.model_dump(), 'so_dem': nights,
-            'don_gia_moi_dem': int(kind.gia_co_ban), 'tong_tien': int(kind.gia_co_ban * nights), 'kha_dung': usable}
+            'don_gia_moi_dem': int(kind.gia_co_ban), 'tong_tien': int(kind.gia_co_ban * nights), 'kha_dung': usable,'chinh_sach':policy()}

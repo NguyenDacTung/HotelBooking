@@ -1,0 +1,30 @@
+# Hồ sơ, căn ảnh và đăng nhập vân tay — 18/10/2026
+
+## Thay đổi hiện tại
+
+- Hồ sơ dùng một avatar trong thẻ có họ tên/email/vai trò; nút Đổi ảnh đại diện nằm cùng thẻ, bỏ icon người thứ hai.
+- Avatar dùng khung tròn cố định: kéo ảnh, chụm/mở hai ngón; có hướng dẫn, Đặt lại vị trí ảnh, preview tròn, Căn lại và Dùng ảnh này. Ảnh phòng vẫn đổi được vùng cắt.
+- Bỏ LocalSessionGate, không hỏi sinh trắc học sau khi vừa đăng nhập bằng mật khẩu và không khóa lại sau 30 giây nền.
+- Nút Đăng nhập bằng vân tay ở màn đăng nhập không kiểm tra ô email/mật khẩu. Bật trước trong Cài đặt khi đang đăng nhập; xác nhận mật khẩu tài khoản một lần và xác thực sinh trắc để đăng ký điện thoại.
+- Android Keystore tạo khóa EC P-256 không xuất ra ngoài, mỗi lần ký cần BIOMETRIC_STRONG với CryptoObject. Chỉ public key được gửi lên server; không lưu mật khẩu, ảnh vân tay hoặc token dài hạn để mở bằng một biến bool.
+- Server phát challenge ngẫu nhiên 2 phút, một lần dùng; xác minh ECDSA/SHA-256 rồi cấp access token mới. Khóa/đổi mật khẩu/quyền, credential hết hạn hoặc thu hồi đều được kiểm tra. Credential tối đa 90 ngày; thay vân tay làm khóa thiết bị mất hiệu lực, cần dùng mật khẩu rồi bật lại.
+- Mỗi điện thoại lưu một tài khoản vân tay. Đăng xuất vẫn giữ lựa chọn đã bật (ghi rõ ở Cài đặt); tắt trong Cài đặt để thu hồi/xóa khóa khi dùng máy chung. Khi khởi động mới trên máy đã bật, không tự khôi phục JWT cũ trước khi người dùng bấm đăng nhập.
+- Chỉ mới có native signer Android; nền tảng không hỗ trợ vẫn dùng mật khẩu. Không thay PIN/đăng ký vân tay OS hộ người dùng.
+
+Thiết kế đối chiếu tài liệu Android: https://developer.android.com/identity/sign-in/biometric-auth . Không dùng kết quả boolean của local_auth làm bằng chứng gửi server.
+
+## Kiểm thử tự động
+
+- Lượt Flutter cuối: 41/41 đạt, gồm nhập vân tay với email/mật khẩu rỗng, không silent restore JWT khi đã bật, thu hồi server, hủy đăng ký, một avatar trên màn hẹp/chữ lớn và crop/reset/preview.
+- Lượt backend đầy đủ: 97 đạt, 1 lỗi kiểm tra số bảng cũ; sửa kỳ vọng metadata từ 25 lên 27 và chạy lại bộ unit 16/16 đạt. Tổng 98 ca khác nhau đã đạt qua các lượt này, không nói rằng lượt đầy đủ ban đầu không có lỗi.
+- 9 ca sinh trắc PostgreSQL bao gồm chữ ký thật P-256, owner, xác nhận mật khẩu đăng ký, credential chưa kích hoạt, sai khóa, nonce hết hạn/đã dùng, sai purpose, đổi token_version/khóa tài khoản, hết hạn/thu hồi, chống boolean giả và cạnh tranh cùng challenge chỉ một lần thành công.
+- Analyze: No issues found. APK debug ARM build/cài thành công; API LAN thật, DEMO_MODE=false, applicationId giữ nguyên.
+- Migration 0008: dump `.local-backups/tetra-v3-20261018-134912/hotel_booking.dump`; đối chiếu toàn bộ cột/dòng cũ 27 bảng không đổi. Không reset hotel_booking.
+
+## Nghiệm thu thiết bị
+
+Đang ghi kết quả QA thực tế. Không dùng widget test hoặc kiểm thử chữ ký server thay cho việc chủ máy chạm cảm biến vân tay. Dữ liệu ảnh/CSV/đơn QA chỉ dùng trên hotel_booking_test, không chọn ảnh cá nhân trên điện thoại.
+
+## Dịch vụ vẫn cần cấu hình
+
+OAuth, SMTP, Firebase, merchant MoMo/VNPAY và video thật vẫn chưa có cấu hình/nội dung hợp lệ. Chỉ kiểm tra trạng thái chưa cấu hình, không coi là đã đăng nhập/gửi mail/nhận push/thanh toán ngoài thật. Giao nhắc khi Doze/reboot cần thử thời gian và thiết bị thực tế, không tự sửa đồng hồ để giả kết quả.

@@ -1,56 +1,24 @@
-# Các trang TTTP
+# Điểm vào chức năng TETRA
 
-Các tab đi qua HomeShell, giữ widget trong IndexedStack và nạp khi lần đầu chọn. Các trang con nhận tham số bằng MaterialPageRoute; route có tên nằm trong app/app_router.dart. File compatibility account.dart/home.dart/bookings.dart/management.dart chỉ export các trang đã tách.
+| Vai trò | Điểm vào | Chức năng |
+|---|---|---|
+| Khách vãng lai | Trang chủ / tìm phòng | Carousel, tìm kiếm thu gọn, lưới đề xuất, chi tiết và đánh giá công khai |
+| Mọi vai trò | Menu ba gạch → Thông tin khách sạn | Video khi có URL, bản đồ, khoảng cách theo yêu cầu, liên hệ thật khi đã cấu hình |
+| Khách đã đăng nhập | Lịch sử → đơn đã trả phòng | Hiện đánh giá đã gửi hoặc nút đánh giá; chọn sao trước khi gửi |
+| Khách đã đăng nhập | Menu → Đánh giá của tôi | Các đánh giá của riêng mình, gồm đánh giá đang ẩn và lý do nếu có |
+| Khách đã đăng nhập | Đơn xác nhận/đang ở/chờ trả → Thanh toán online | Chọn cổng theo capabilities, xem attempt và kiểm tra kết quả |
+| Khách đã đăng nhập | Chi tiết đơn → Mã đặt phòng | QR và mã tham chiếu không chứa thông tin cá nhân |
+| Nhân viên/admin | Menu → Lịch phòng | Chọn phòng, lịch tháng và timeline cùng ngày, mở chi tiết đơn; tạm ngừng theo khoảng |
+| Nhân viên/admin | Menu → Quét mã đặt phòng | Camera/nhập tay, tra cứu backend, không tự thực hiện nghiệp vụ |
+| Admin | Menu → Quản lý đánh giá | Bộ lọc phòng/loại/sao/hiện ẩn/ngày, phân trang, ẩn/hiện với lý do tùy chọn |
+| Admin | Menu → Nhập phòng từ CSV | Chọn file, xem lỗi từng dòng, xem trước, xác nhận toàn bộ và chống nhập trùng |
+| Admin | Báo cáo → Xuất PDF | Xem trong app, lưu/chia sẻ qua hệ điều hành; CSV giữ luồng chia sẻ |
+| Mọi tài khoản | Tài khoản → Đổi ảnh đại diện | Chọn/chụp, căn ảnh, xem lại, upload |
+| Admin | Phòng → Ảnh phòng | Ảnh thuộc từng phòng, chọn/chụp và crop/preview trước upload |
+| Mọi tài khoản | Menu → Góp ý và báo lỗi | Nội dung, ảnh chú thích tại màn riêng, xem/bỏ ảnh, thông tin thiết bị opt-in |
+| Admin | Menu → Phản hồi khách hàng | Xem phản hồi, ảnh có xác thực, cập nhật tiến độ xử lý |
+| Mọi tài khoản | Menu → Cài đặt | Mật khẩu, liên kết, thông báo/giờ nhắc, bật/tắt Đăng nhập bằng vân tay; trạng thái dịch vụ |
+| Thiết bị đã bật vân tay | Màn đăng nhập → Đăng nhập bằng vân tay | Không nhập email/mật khẩu; ký challenge bằng khóa Keystore để server cấp phiên mới, không khóa phiên sau đăng nhập mật khẩu |
+| Admin | Cài đặt → Thông tin công khai khách sạn | Nội dung liên hệ/video công khai; không chỉnh khóa bí mật qua giao diện |
 
-| Class | File | Quyền |
-| --- | --- | --- |
-| AccountDetailScreen | `lib/screens/admin/account_detail_screen.dart` | Admin |
-| AccountsScreen | `lib/screens/admin/accounts_screen.dart` | Admin |
-| AmenitiesScreen | `lib/screens/admin/amenities_screen.dart` | Admin |
-| DashboardScreen | `lib/screens/admin/dashboard_screen.dart` | Admin |
-| RevenueReportScreen | `lib/screens/admin/revenue_report_screen.dart` | Admin |
-| RoomClosuresScreen | `lib/screens/admin/room_closures_screen.dart` | Admin |
-| RoomImagesScreen | `lib/screens/admin/room_images_screen.dart` | Admin |
-| RoomTypesScreen | `lib/screens/admin/room_types_screen.dart` | Admin |
-| RoomsScreen | `lib/screens/admin/rooms_screen.dart` | Admin |
-| LoginScreen | `lib/screens/auth/login_screen.dart` | Công khai |
-| RegisterScreen | `lib/screens/auth/register_screen.dart` | Công khai |
-| BookingDetailScreen | `lib/screens/customer/booking_detail_screen.dart` | Khách (chi tiết/tìm: công khai) |
-| BookingReviewScreen | `lib/screens/customer/booking_review_screen.dart` | Khách (chi tiết/tìm: công khai) |
-| BookingSuccessScreen | `lib/screens/customer/booking_success_screen.dart` | Khách (chi tiết/tìm: công khai) |
-| HomeScreen | `lib/screens/customer/home_screen.dart` | Khách (chi tiết/tìm: công khai) |
-| MyBookingsScreen | `lib/screens/customer/my_bookings_screen.dart` | Khách (chi tiết/tìm: công khai) |
-| RoomDetailScreen | `lib/screens/customer/room_detail_screen.dart` | Khách (chi tiết/tìm: công khai) |
-| SearchScreen | `lib/screens/customer/search_screen.dart` | Khách (chi tiết/tìm: công khai) |
-| ChangePasswordScreen | `lib/screens/shared/change_password_screen.dart` | Đã đăng nhập; hồ sơ có trạng thái khách |
-| LinkedAccountsScreen | `lib/screens/shared/linked_accounts_screen.dart` | Đã đăng nhập; hồ sơ có trạng thái khách |
-| NotificationSettingsScreen | `lib/screens/shared/notification_settings_screen.dart` | Đã đăng nhập; hồ sơ có trạng thái khách |
-| NotificationsScreen | `lib/screens/shared/notifications_screen.dart` | Đã đăng nhập; hồ sơ có trạng thái khách |
-| ProfileScreen | `lib/screens/shared/profile_screen.dart` | Đã đăng nhập; hồ sơ có trạng thái khách |
-| StaffBookingListScreen | `lib/screens/staff/booking_list_screen.dart` | Lễ tân/Admin |
-| PaymentsScreen | `lib/screens/staff/payments_screen.dart` | Lễ tân/Admin |
-| RoomStatusScreen | `lib/screens/staff/room_status_screen.dart` | Lễ tân/Admin |
-
-| Điểm vào | Trang / API |
-| --- | --- |
-| /login, /register | LoginScreen/RegisterScreen — POST /auth/login, /auth/register, /auth/google, /auth/facebook |
-| Tab khách Trang chủ/Tìm phòng | HomeScreen/SearchScreen — GET /room-types, /rooms/available |
-| Kết quả → phòng | RoomDetailScreen(room,start,end,guests) — GET /rooms/{id} |
-| Tiếp tục → xem lại | BookingReviewScreen(room,start,end,guests) — POST /rooms/{id}/quote, /bookings |
-| Commit tạo → thành công | BookingSuccessScreen(booking) — dùng kết quả commit |
-| Tab đặt phòng → chi tiết | MyBookingsScreen/StaffBookingListScreen → BookingDetailScreen(id) — /bookings/my hoặc /staff/bookings, /bookings/{id}, cancel/confirm/reject |
-| Chi tiết → thu/hoàn | PaymentsScreen(bookingId) — /staff/bookings/{id}/payments, /admin/payments/{id}/refunds |
-| Tab staff tình trạng; drawer admin tình trạng | RoomStatusScreen — /staff/rooms/status, /staff/rooms/{id}/operational-status |
-| Tab admin Tổng quan/Báo cáo | DashboardScreen/RevenueReportScreen — /admin/reports/revenue, export |
-| Drawer /admin/accounts → thêm/chi tiết | AccountsScreen → AccountDetailScreen(id nullable) — /admin/accounts, role/status |
-| Drawer /admin/room-types | RoomTypesScreen — /staff/room-types |
-| Drawer /admin/rooms | RoomsScreen — /staff/rooms |
-| Drawer /admin/amenities | AmenitiesScreen — /staff/amenities |
-| Drawer /admin/closures | RoomClosuresScreen — /staff/room-closures |
-| Loại phòng → ảnh/tiện nghi | RoomImagesScreen(typeId) — /staff/room-types/{id}/images và amenities |
-| Tab /profile | ProfileScreen — GET/PATCH /users/me |
-| Hồ sơ → đổi mật khẩu/liên kết | ChangePasswordScreen/LinkedAccountsScreen — /users/me/change-password, /users/me/identities |
-| Chuông /notifications | NotificationsScreen — /notifications, unread-count, read/read-all; chọn bản ghi → BookingDetailScreen |
-| Hồ sơ /notification-settings | NotificationSettingsScreen — cài đặt thiết bị và đồng bộ nhắc từ /bookings/my |
-
-Quyền thực thi tại backend; route không phải biện pháp phân quyền. Khách chưa đăng nhập được tìm; đăng nhập trong chi tiết giữ nguyên phòng/ngày. SearchCriteria Provider toàn ứng dụng giữ ngày/khách/loại/giá qua đăng nhập. Form CRUD lớn được tái sử dụng ở widgets/catalog_*; mỗi trang quản lý vẫn có wrapper Screen riêng.
+Menu lọc theo vai trò và route guard kiểm tra lại; backend tiếp tục là nguồn kiểm tra quyền. Nhận/trả phòng không yêu cầu lý do. Các kiểm tra khác như còn nợ, quyền, phòng sạch và trạng thái đơn vẫn giữ nguyên.

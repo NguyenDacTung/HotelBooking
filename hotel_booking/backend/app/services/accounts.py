@@ -7,7 +7,7 @@ from app.services.bookings import get_or_404
 
 def audit(db, user, entity, key, action, before, after, reason):
     db.add(Audit(entity=entity, entity_id=str(key), action=action, actor_id=user['account'].id,
-        before=before, after=after, ly_do=reason))
+        before=before, after=after, ly_do=reason or ''))
 
 
 def account_out(db, account, detail=False):

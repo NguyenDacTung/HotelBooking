@@ -21,6 +21,15 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    // file_picker 11 skips KGP whenever AGP >= 9, even when this app has
+    // explicitly disabled built-in Kotlin for its existing plugins. Without
+    // this bridge its Kotlin sources are not compiled (missing plugin class).
+    if (project.name in setOf("file_picker", "flutter_osm_plugin") &&
+        providers.gradleProperty("android.builtInKotlin").orNull == "false") {
+        plugins.withId("com.android.library") {
+            pluginManager.apply("org.jetbrains.kotlin.android")
+        }
+    }
     // Plugins without a JVM target inherit JDK 25 on this machine. Keep their
     // Java and Kotlin bytecode aligned with the app, without editing pub cache.
     if (project.name != "app") afterEvaluate {

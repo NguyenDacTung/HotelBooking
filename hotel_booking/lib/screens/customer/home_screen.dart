@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Chào mừng đến TTTP',
+                      'Chào mừng đến TETRA',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF123A52),
@@ -155,7 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: const Text(
-                                  'ĐẶC QUYỀN TTTP',
+                                  'ĐẶC QUYỀN TETRA',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontSize: 10,
@@ -166,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               const SizedBox(height: 8),
                               const Text(
-                                'TTTP\nMột kỳ nghỉ trọn vẹn',
+                                'TETRA\nMột kỳ nghỉ trọn vẹn',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 22,
@@ -212,9 +212,9 @@ class _HomeScreenState extends State<HomeScreen> {
         const RecommendedRooms(),
         const SizedBox(height: 28),
 
-        // Phần Trải nghiệm TTTP
+        // Phần Trải nghiệm TETRA
         Text(
-          'Trải nghiệm TTTP',
+          'Trải nghiệm TETRA',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             color: const Color(0xFF123A52),
@@ -292,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Ảnh không gian mang tính minh họa. Giá và khả dụng được kiểm tra theo ngày bạn chọn.',
+                  'Chọn ngày lưu trú để xem giá và phòng còn trống.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: const Color(0xFF5C6875),
                   ),
@@ -324,7 +324,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               icon: const Icon(Icons.call_outlined),
               label: const Text(
-                'Liên hệ TTTP',
+                'Liên hệ TETRA',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
@@ -350,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               icon: const Icon(Icons.map_outlined),
               label: const Text(
-                'Xem vị trí TTTP',
+                'Xem vị trí TETRA',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),

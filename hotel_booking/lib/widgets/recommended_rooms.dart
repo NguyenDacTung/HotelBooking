@@ -128,7 +128,7 @@ class _RecommendedRoomsState extends State<RecommendedRooms>
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            mainAxisExtent: 118 + 125 * scale,
+            mainAxisExtent: 118 + 155 * scale,
           ),
           itemBuilder: (context, index) {
             final room = rooms[index];
@@ -176,6 +176,14 @@ class _RecommendedRoomsState extends State<RecommendedRooms>
                           ),
                           Text(
                             room.type,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Text(
+                            (room.rating['so_danh_gia'] ?? 0) == 0
+                                ? 'Chưa có đánh giá'
+                                : '★ ${room.rating['diem_trung_binh']} (${room.rating['so_danh_gia']})',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall,

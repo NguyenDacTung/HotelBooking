@@ -48,6 +48,12 @@ class RoomCard extends StatelessWidget {
                       color: const Color(0xFF123A52),
                     ),
                   ),
+                  Text(
+                    (room.rating['so_danh_gia'] ?? 0) == 0
+                        ? 'Chưa có đánh giá'
+                        : '★ ${room.rating['diem_trung_binh']}/5 (${room.rating['so_danh_gia']})',
+                    style: const TextStyle(color: Color(0xFF6F501E)),
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [

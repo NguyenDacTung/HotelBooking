@@ -39,10 +39,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Đổi mật khẩu',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: Form(
@@ -71,8 +68,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color:
-                              const Color(0xFFB58A45).withValues(alpha: 0.14),
+                          color: const Color(0xFFB58A45)
+                              .withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -84,7 +81,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Text(
-                          'Bảo mật tài khoản TTTP',
+                          'Bảo mật tài khoản TETRA',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -116,8 +113,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     obscureText: true,
                     validator: (v) =>
                         v != null && v.length >= 8 && v.length <= 128
-                            ? null
-                            : 'Mật khẩu từ 8 đến 128 ký tự',
+                        ? null
+                        : 'Mật khẩu từ 8 đến 128 ký tự',
                     decoration: InputDecoration(
                       labelText: 'Mật khẩu mới',
                       prefixIcon: const Icon(Icons.vpn_key_outlined),
@@ -178,10 +175,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                     context,
                                     'Đã đổi mật khẩu. Vui lòng đăng nhập lại.',
                                   );
-                                  Navigator.popUntil(
-                                    context,
-                                    (r) => r.isFirst,
-                                  );
+                                  Navigator.popUntil(context, (r) => r.isFirst);
                                 }
                               } catch (e) {
                                 if (context.mounted) message(context, e);

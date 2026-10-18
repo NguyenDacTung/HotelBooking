@@ -86,10 +86,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Quản lý tài khoản',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: [
           IconButton(
@@ -233,8 +230,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
               ),
             ...items.map((a) {
               final isActive = a['dang_hoat_dong'] == true;
-              final statusColor =
-                  isActive ? const Color(0xFF237A57) : const Color(0xFFB42318);
+              final statusColor = isActive
+                  ? const Color(0xFF237A57)
+                  : const Color(0xFFB42318);
               return Card(
                 elevation: 0,
                 margin: const EdgeInsets.only(bottom: 10),

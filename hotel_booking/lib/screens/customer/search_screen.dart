@@ -48,9 +48,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   Text(
                     'Tìm căn phòng của bạn',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF123A52),
-                        ),
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF123A52),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   if (editing)
@@ -130,9 +130,9 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: Text(
                   '${s.total} phòng phù hợp',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF123A52),
-                      ),
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF123A52),
+                  ),
                 ),
               ),
             ...s.rooms.map(

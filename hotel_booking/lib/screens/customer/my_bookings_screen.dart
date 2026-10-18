@@ -24,8 +24,8 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   }
 
   Future<void> load() => context.read<BookingProvider>().load(
-        context.read<SessionProvider>().staff,
-      );
+    context.read<SessionProvider>().staff,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +60,9 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                   Text(
                     session.staff ? 'Yêu cầu đặt phòng' : 'Đặt phòng của tôi',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF123A52),
-                        ),
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF123A52),
+                    ),
                   ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(

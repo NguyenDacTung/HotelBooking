@@ -1,3 +1,9 @@
+# Cập nhật 18/10/2026
+
+Bản hiện tại dùng migration 0004, ảnh theo phòng, nghiệp vụ nhận/trả/phụ thu và khôi phục mật khẩu có cấu hình. Chạy Wi-Fi bằng `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start_backend.ps1 -Lan`; APK dùng API_BASE_URL LAN và DEMO_MODE=false, không cần adb reverse. Xem [quy tắc mới](business_rules.md), [kiểm chứng nâng cấp](upgrade_verification.md), [cấu hình dịch vụ](service_configuration.md).
+
+Phần 17/10 bên dưới là nhật ký phiên bản cũ; các giới hạn chưa có check-in/reset/push và hướng dẫn chỉ dùng USB đã được thay thế bởi các tài liệu cập nhật trên.
+
 # TTTP — bản nâng cấp 17/10/2026
 
 ## Chạy cục bộ

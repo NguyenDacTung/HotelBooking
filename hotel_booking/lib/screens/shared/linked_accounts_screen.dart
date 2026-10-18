@@ -1,3 +1,5 @@
+import '../../providers/capabilities_provider.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -71,6 +73,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final caps = context.watch<CapabilitiesProvider?>();
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -81,10 +84,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Phương thức đăng nhập',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: ListView(
@@ -107,9 +107,12 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
             Builder(
               builder: (context) {
                 final linked = items.any((i) => i['provider'] == provider);
-                final configured = provider == 'GOOGLE'
-                    ? SocialLoginService.googleClientId.isNotEmpty
-                    : SocialLoginService.facebookEnabled;
+                final configured =
+                    (caps?.ready('social_login', provider.toLowerCase()) ??
+                        false) &&
+                    (provider == 'GOOGLE'
+                        ? SocialLoginService.googleClientId.isNotEmpty
+                        : SocialLoginService.facebookEnabled);
                 final isGoogle = provider == 'GOOGLE';
 
                 return Card(
@@ -132,10 +135,11 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: (isGoogle
-                                ? const Color(0xFFB58A45)
-                                : const Color(0xFF123A52))
-                            .withValues(alpha: 0.12),
+                        color:
+                            (isGoogle
+                                    ? const Color(0xFFB58A45)
+                                    : const Color(0xFF123A52))
+                                .withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
@@ -162,14 +166,15 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
                         linked
                             ? 'Đã liên kết'
                             : configured
-                                ? 'Chưa liên kết'
-                                : 'Chưa cấu hình',
+                            ? 'Chưa liên kết'
+                            : 'Chưa cấu hình',
                         style: TextStyle(
                           color: linked
                               ? const Color(0xFF237A57)
                               : const Color(0xFF5C6875),
-                          fontWeight:
-                              linked ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: linked
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                           fontSize: 13,
                         ),
                       ),
@@ -179,10 +184,11 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
                         foregroundColor: linked
                             ? const Color(0xFFB42318)
                             : const Color(0xFF123A52),
-                        backgroundColor: (linked
-                                ? const Color(0xFFB42318)
-                                : const Color(0xFF123A52))
-                            .withValues(alpha: 0.08),
+                        backgroundColor:
+                            (linked
+                                    ? const Color(0xFFB42318)
+                                    : const Color(0xFF123A52))
+                                .withValues(alpha: 0.08),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -210,15 +216,11 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
             child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.shield_outlined,
-                  size: 20,
-                  color: Color(0xFF123A52),
-                ),
+                Icon(Icons.shield_outlined, size: 20, color: Color(0xFF123A52)),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'TTTP không tự liên kết tài khoản chỉ vì trùng email. Hủy liên kết sẽ yêu cầu đăng nhập lại; không thể bỏ phương thức đăng nhập cuối cùng.',
+                    'TETRA không tự liên kết tài khoản chỉ vì trùng email. Hủy liên kết sẽ yêu cầu đăng nhập lại; không thể bỏ phương thức đăng nhập cuối cùng.',
                     style: TextStyle(
                       color: Color(0xFF5C6875),
                       fontSize: 13,

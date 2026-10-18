@@ -1,3 +1,5 @@
+import 'pdf_preview_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -58,17 +60,14 @@ class _RevenueReportScreenState extends State<RevenueReportScreen> {
                 Text(
                   'Báo cáo thực thu',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: const Color(0xFF123A52),
-                      ),
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF123A52),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Thu tiền thủ công · Không phải thanh toán trực tuyến hay báo cáo kế toán.',
-                  style: TextStyle(
-                    color: Color(0xFF5C6875),
-                    fontSize: 13,
-                  ),
+                  'Thu và hoàn tiền theo giao dịch đã ghi nhận. Không tính giao dịch sandbox.',
+                  style: TextStyle(color: Color(0xFF5C6875), fontSize: 13),
                 ),
                 const SizedBox(height: 16),
                 Wrap(
@@ -88,8 +87,9 @@ class _RevenueReportScreenState extends State<RevenueReportScreen> {
                             ? null
                             : () {
                                 a.end = DateTime.now();
-                                a.start =
-                                    a.end.subtract(Duration(days: days - 1));
+                                a.start = a.end.subtract(
+                                  Duration(days: days - 1),
+                                );
                                 page = 0;
                                 a.load();
                               },
@@ -264,10 +264,7 @@ class _RevenueReportScreenState extends State<RevenueReportScreen> {
                   const SizedBox(height: 12),
                   const Text(
                     'Xanh lá: Thu · Đỏ: Hoàn · Xanh đậm: Thu ròng. Trục Y: VND; trục X: thứ tự kỳ trong bảng.',
-                    style: TextStyle(
-                      color: Color(0xFF5C6875),
-                      fontSize: 12.5,
-                    ),
+                    style: TextStyle(color: Color(0xFF5C6875), fontSize: 12.5),
                   ),
                 ],
               ),
@@ -286,9 +283,9 @@ class _RevenueReportScreenState extends State<RevenueReportScreen> {
                   Text(
                     'Đặt phòng theo trạng thái',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF123A52),
-                        ),
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF123A52),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   if ((a.report!['trang_thai'] as Json).isNotEmpty)
@@ -325,8 +322,7 @@ class _RevenueReportScreenState extends State<RevenueReportScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: (a.report!['trang_thai'] as Json)
-                        .entries
+                    children: (a.report!['trang_thai'] as Json).entries
                         .map(
                           (e) => Chip(
                             backgroundColor: const Color(0xFFF5F7FA),
@@ -346,7 +342,10 @@ class _RevenueReportScreenState extends State<RevenueReportScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ...rows.skip(page * 20).take(20).map(
+            ...rows
+                .skip(page * 20)
+                .take(20)
+                .map(
                   (r) => Card(
                     elevation: 0,
                     margin: const EdgeInsets.only(bottom: 10),
@@ -444,8 +443,26 @@ class _RevenueReportScreenState extends State<RevenueReportScreen> {
                         : () async {
                             setState(() => exporting = true);
                             try {
-                              await ExportService(context.read<ApiService>())
-                                  .share(a.query, format);
+                              final service = ExportService(
+                                context.read<ApiService>(),
+                              );
+                              if (format == 'pdf') {
+                                final file = await service.create(
+                                  a.query,
+                                  format,
+                                );
+                                if (context.mounted) {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          PdfPreviewScreen(file: file),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                await service.share(a.query, format);
+                              }
                             } catch (e) {
                               if (context.mounted) message(context, e);
                             } finally {

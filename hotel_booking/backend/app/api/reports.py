@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.errors import fail
 from app.services.reports import revenue, VN
 
-router = APIRouter(prefix='/admin/reports',tags=['Báo cáo TTTP'],dependencies=[Depends(permission('reports.read'))])
+router = APIRouter(prefix='/admin/reports',tags=['Báo cáo TETRA'],dependencies=[Depends(permission('reports.read'))])
 
 
 @router.get('/revenue')
@@ -29,10 +29,10 @@ def export(tu_ngay: date,den_ngay: date,format: Literal['csv','pdf']='csv',
     data = revenue(db,tu_ngay,den_ngay,mode)
     headers = ['Kỳ','Thu (VND)','Hoàn (VND)','Thu ròng (VND)','Số đặt phòng']
     rows = [[r['ngay'],r['thu'],r['hoan'],r['thu_rong'],r['so_dat_phong']] for r in data['series']]
-    filename = f'TTTP-thuc-thu-{tu_ngay}-{den_ngay}.{format}'
+    filename = f'TETRA-thuc-thu-{tu_ngay}-{den_ngay}.{format}'
     if format=='csv':
         stream = StringIO(); writer=csv.writer(stream)
-        writer.writerow(['TTTP - Báo cáo thực thu',str(tu_ngay),str(den_ngay),'Asia/Ho_Chi_Minh'])
+        writer.writerow(['TETRA - Báo cáo thực thu',str(tu_ngay),str(den_ngay),'Asia/Ho_Chi_Minh'])
         writer.writerow([data['dinh_nghia']]); writer.writerow(headers)
         for row in rows: writer.writerow([safe_csv(v) if isinstance(v,str) else v for v in row])
         writer.writerow(['Tổng',data['kpi']['thu'],data['kpi']['hoan'],data['kpi']['thu_rong'],data['kpi']['so_dat_phong']])
@@ -47,10 +47,10 @@ def export(tu_ngay: date,den_ngay: date,format: Literal['csv','pdf']='csv',
         from reportlab.graphics.charts.lineplots import LinePlot
         font = settings().report_font_path
         if not font.is_file(): fail(503,'PDF_FONT_MISSING','Chưa cấu hình font tiếng Việt cho PDF')
-        pdfmetrics.registerFont(TTFont('TTTP',str(font)))
-        style = ParagraphStyle('TTTP',fontName='TTTP',fontSize=10,leading=15)
+        pdfmetrics.registerFont(TTFont('TETRA',str(font)))
+        style = ParagraphStyle('TETRA',fontName='TETRA',fontSize=10,leading=15)
         stream=BytesIO(); doc=SimpleDocTemplate(stream)
-        story=[Paragraph('TTTP — Báo cáo thực thu',ParagraphStyle('title',parent=style,fontSize=18,leading=24)),
+        story=[Paragraph('TETRA — Báo cáo thực thu',ParagraphStyle('title',parent=style,fontSize=18,leading=24)),
             Paragraph(f'Kỳ {tu_ngay} — {den_ngay} | Asia/Ho_Chi_Minh',style),
             Paragraph('Xuất lúc '+datetime.now(VN).strftime('%d/%m/%Y %H:%M'),style),
             Paragraph(data['dinh_nghia'],style),Spacer(1,12)]
@@ -62,6 +62,6 @@ def export(tu_ngay: date,den_ngay: date,format: Literal['csv','pdf']='csv',
         for i,color in enumerate(['#237A57','#B42318','#123A52']): chart.lines[i].strokeColor=HexColor(color)
         drawing.add(chart);story.extend([drawing,Paragraph('Trục X: thứ tự kỳ; trục Y: VND. Xanh lá: Thu; đỏ: Hoàn; xanh đậm: Thu ròng.',style)])
         table=Table([headers]+rows+[['Tổng',data['kpi']['thu'],data['kpi']['hoan'],data['kpi']['thu_rong'],data['kpi']['so_dat_phong']]],repeatRows=1)
-        table.setStyle(TableStyle([('FONTNAME',(0,0),(-1,-1),'TTTP'),('FONTSIZE',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),7),('LINEBELOW',(0,0),(-1,0),1,HexColor('#123A52'))]))
+        table.setStyle(TableStyle([('FONTNAME',(0,0),(-1,-1),'TETRA'),('FONTSIZE',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),7),('LINEBELOW',(0,0),(-1,0),1,HexColor('#123A52'))]))
         story.append(table);doc.build(story);raw=stream.getvalue();mime='application/pdf'
     return Response(raw,media_type=mime,headers={'Content-Disposition':f'attachment; filename="{filename}"'})

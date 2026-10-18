@@ -3,14 +3,24 @@ import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/token_storage.dart';
+import '../services/push_service.dart';
+import '../services/biometric_login_service.dart';
 
 class SessionProvider extends ChangeNotifier {
   final ApiService api;
   final TokenStorage storage;
+  final Future<void> Function()? clearPrivateFiles;
+  final BiometricLoginService? biometric;
+  VoidCallback? onSignedOut;
   Json? user;
   bool restoring = true;
   String? restoreError;
-  SessionProvider(this.api, this.storage) {
+  SessionProvider(
+    this.api,
+    this.storage, {
+    this.clearPrivateFiles,
+    this.biometric,
+  }) {
     api.onUnauthorized = logout;
   }
   bool get staff => user != null && user!['ma_quyen'] != 'KHACH_HANG';
@@ -20,15 +30,34 @@ class SessionProvider extends ChangeNotifier {
     restoreError = null;
     notifyListeners();
     try {
+      if (biometric != null && await biometric!.registration() != null) {
+        // Opted-in devices sign in from the fingerprint button, never silently
+        // restore an access token before biometric verification.
+        await storage.clear();
+        api.token = null;
+        user = null;
+        return;
+      }
       api.token = await storage.read();
       if (api.token != null) {
         user = await api.request('GET', '/users/me') as Json;
       }
     } catch (e) {
       restoreError = e.toString();
+    } finally {
+      restoring = false;
+      notifyListeners();
     }
-    restoring = false;
-    notifyListeners();
+  }
+
+  Future<void> loginWithBiometric() async {
+    final service = biometric ?? const BiometricLoginService();
+    try {
+      await _authenticate('/auth/biometric/login', await service.proof(api));
+    } on ApiError catch (e) {
+      if (e.status == 401) await service.forget();
+      rethrow;
+    }
   }
 
   Future<void> login(String email, String password) async {
@@ -78,14 +107,22 @@ class SessionProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    await PushService.instance.disable(api);
     api.token = null;
     user = null;
+    onSignedOut?.call();
     notifyListeners();
     await storage.clear();
+    await clearPrivateFiles?.call();
   }
 
   Future<void> social(String provider, String credential) async {
     await _authenticate('/auth/$provider', {'credential': credential});
+  }
+
+  Future<void> refreshProfile() async {
+    user = await api.request('GET', '/users/me') as Json;
+    notifyListeners();
   }
 
   Future<void> profile(Json body) async {

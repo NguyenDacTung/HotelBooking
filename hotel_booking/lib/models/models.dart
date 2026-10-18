@@ -4,6 +4,7 @@ class Room {
   final int id, typeId, price, capacity;
   final String number, type, description;
   final String usageStatus;
+  final Json rating;
   bool get inUse => usageStatus == 'DANG_SU_DUNG';
   final List<Json> images, amenities;
   Room.fromJson(Json json)
@@ -14,6 +15,7 @@ class Room {
       number = json['so_phong'] as String,
       type = json['ten_loai'] as String,
       description = json['mo_ta'] as String? ?? '',
+      rating = (json['danh_gia'] as Json? ?? {}),
       usageStatus = json['trang_thai_su_dung'] as String? ?? 'CON_TRONG',
       images = (json['hinh_anh'] as List? ?? []).cast<Json>(),
       amenities = (json['tien_nghi'] as List? ?? []).cast<Json>();
@@ -26,6 +28,7 @@ class Room {
     'ten_loai': type,
     'mo_ta': description,
     'trang_thai_su_dung': usageStatus,
+    'danh_gia': rating,
     'hinh_anh': images,
     'tien_nghi': amenities,
   };

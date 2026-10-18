@@ -49,7 +49,7 @@ if ($listener) {
     }
     if (-not (Test-Api)) { throw 'Backend/PostgreSQL unavailable. Check backend/server.stderr.log. No database reset was performed.' }
 }
-Write-Output 'TTTP: PostgreSQL health OK; backend port 8000.'
+Write-Output 'TETRA: PostgreSQL health OK; backend port 8000.'
 if ($Lan) {
     Write-Output "Phone API: http://${lanAddress}:8000 (same Wi-Fi; Private firewall rule required)."
     Write-Output 'Phone access does not require adb reverse. PostgreSQL port was not opened.'

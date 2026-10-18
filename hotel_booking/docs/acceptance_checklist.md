@@ -1,3 +1,9 @@
+# Nghiệm thu TETRA — tích hợp mới
+
+Trạng thái mới nhất, phân biệt test PostgreSQL/widget/điện thoại/fixture và dịch vụ chưa cấu hình: [integration_acceptance.md](integration_acceptance.md). Các kết quả TTTP phía dưới là lịch sử trước đợt tích hợp mới.
+
+---
+
 # Kiểm chứng nâng cấp TTTP
 
 Cập nhật 17/10/2026. Các mốc baseline cũ trong STATUS/test_cases không đại diện cho toàn bộ bản nâng cấp.

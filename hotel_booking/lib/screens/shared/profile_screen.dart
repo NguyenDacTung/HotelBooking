@@ -1,3 +1,7 @@
+import '../../widgets/image_crop.dart';
+import '../../services/api_service.dart';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -131,6 +135,25 @@ class _ProfileFormState extends State<ProfileForm> {
     super.dispose();
   }
 
+  Future<void> changeAvatar() async {
+    try {
+      final bytes = await chooseCroppedImage(context, avatar: true);
+      if (bytes == null || !mounted) return;
+      setState(() => busy = true);
+      final session = context.read<SessionProvider>();
+      await context.read<ApiService>().upload(
+        '/users/me/avatar',
+        bytes,
+        'avatar.png',
+      );
+      await session.refreshProfile();
+    } catch (e) {
+      if (mounted) message(context, e);
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionProvider>();
@@ -139,82 +162,85 @@ class _ProfileFormState extends State<ProfileForm> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // Thẻ thông tin tài khoản sang trọng
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0D2B3E),
-                  Color(0xFF123A52),
-                  Color(0xFF1B4D6B),
-                ],
+                colors: [Color(0xFF0D2B3E), Color(0xFF1B4D6B)],
               ),
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF123A52).withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB58A45).withValues(alpha: 0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFB58A45).withValues(alpha: 0.6),
-                      width: 1.5,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Semantics(
+                      label: 'Ảnh đại diện của bạn',
+                      child: CircleAvatar(
+                        radius: 38,
+                        backgroundColor: const Color(0xFFE7EDF1),
+                        backgroundImage: session.user?['avatar_url'] != null
+                            ? CachedNetworkImageProvider(
+                                context.read<ApiService>().imageUrl(
+                                  session.user!['avatar_url'],
+                                ),
+                              )
+                            : null,
+                        child: session.user?['avatar_url'] == null
+                            ? const Icon(
+                                Icons.person_outline,
+                                size: 40,
+                                color: Color(0xFF123A52),
+                              )
+                            : null,
+                      ),
                     ),
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    color: Color(0xFFB58A45),
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        session.user!['email'] as String? ??
-                            'Chưa có email xác minh',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            session.user!['ho_ten'] as String? ??
+                                'Tài khoản TETRA',
+                            style: const TextStyle(
                               color: Colors.white,
+                              fontSize: 21,
                               fontWeight: FontWeight.w700,
-                              fontSize: 17,
                             ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFB58A45),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          TttpStrings.roleNames[session.user!['ma_quyen']] ??
-                              'Tài khoản TTTP',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
                           ),
-                        ),
+                          const SizedBox(height: 6),
+                          Text(
+                            session.user!['email'] as String? ?? '',
+                            style: const TextStyle(
+                              color: Color(0xFFE5EDF2),
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            TttpStrings.roleNames[session.user!['ma_quyen']] ??
+                                'Tài khoản',
+                            style: const TextStyle(
+                              color: Color(0xFFF0D39A),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFFF0D39A),
                   ),
+                  onPressed: busy ? null : changeAvatar,
+                  icon: const Icon(Icons.photo_camera_outlined, size: 20),
+                  label: const Text('Đổi ảnh đại diện'),
                 ),
               ],
             ),
@@ -257,6 +283,8 @@ class _ProfileFormState extends State<ProfileForm> {
                 if (!session.staff) ...[
                   TextFormField(
                     controller: phone,
+                    validator: (v) =>
+                        (v?.trim().isEmpty ?? true) ? null : phoneText(v),
                     decoration: InputDecoration(
                       labelText: 'Điện thoại',
                       prefixIcon: const Icon(Icons.phone_outlined),
@@ -340,11 +368,11 @@ class _ProfileFormState extends State<ProfileForm> {
                   onPressed: busy
                       ? null
                       : () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => const ChangePasswordScreen(),
-                            ),
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const ChangePasswordScreen(),
                           ),
+                        ),
                   child: const Text(
                     'Đổi mật khẩu',
                     style: TextStyle(fontWeight: FontWeight.w600),
@@ -363,11 +391,11 @@ class _ProfileFormState extends State<ProfileForm> {
                   onPressed: busy
                       ? null
                       : () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => const LinkedAccountsScreen(),
-                            ),
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const LinkedAccountsScreen(),
                           ),
+                        ),
                   child: const Text(
                     'Phương thức đăng nhập',
                     style: TextStyle(fontWeight: FontWeight.w600),
@@ -386,11 +414,11 @@ class _ProfileFormState extends State<ProfileForm> {
                   onPressed: busy
                       ? null
                       : () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => const NotificationSettingsScreen(),
-                            ),
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => const NotificationSettingsScreen(),
                           ),
+                        ),
                   child: const Text(
                     'Cài đặt thông báo',
                     style: TextStyle(fontWeight: FontWeight.w600),

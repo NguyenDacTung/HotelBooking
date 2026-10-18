@@ -1,3 +1,13 @@
+# Kết quả cập nhật 18/10/2026
+
+- 73 bài backend đạt trên PostgreSQL hotel_booking_test, 25 bài Flutter đạt; analyze không có lỗi.
+- Đã có test luồng cùng ngày, nhận phòng đồng thời (một 200, một 409), phụ thu sớm/muộn tại biên 06/12/14/15/18 giờ, qua ngày, chặn trả còn nợ, giường/phụ thu không nhân đôi, trả chuyển phòng cần dọn.
+- Có test lễ tân đặt hộ, đổi phòng/ngày/giá, bảo vệ giá đã thay đổi, hủy/no-show, giữ chỗ mới hết hạn và bảo vệ phiếu cũ, phòng quá hạn thực ở không lên đề xuất, không dọn/bảo trì khi đang ở.
+- Có test SMTP giả lập: mã băm, dùng một lần, thu hồi token cũ; giới hạn login và phone validation; gắn thiết bị đúng chủ. Chưa gửi email/push/OAuth thật do chưa có cấu hình dịch vụ.
+- Flutter kiểm thử đồng bộ tiêu chí tìm kiếm và lưu/thử lại đúng request thanh toán chưa rõ kết quả khi mở lại màn hình.
+- Migration 0002→0004 trên database chính đã đối chiếu toàn bộ cột/dòng cũ; ảnh và danh mục nâng cấp có sao lưu; không reset database, không đổi mật khẩu tài khoản cũ.
+- Kiểm thử điện thoại cho lần nâng cấp đang được ghi riêng trong upgrade_verification.md. Danh sách bên dưới là lịch sử kế hoạch; không dùng phần cũ để kết luận lần chạy hiện tại.
+
 # Kiểm thử và giới hạn môi trường
 
 Ngày triển khai: 17/10/2026. Xem kết quả cuối trong [STATUS.md](STATUS.md).

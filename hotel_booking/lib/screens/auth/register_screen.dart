@@ -23,11 +23,7 @@ class RegisterScreen extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0D2B3E),
-                Color(0xFF123A52),
-                Color(0xFF1B4D6B),
-              ],
+              colors: [Color(0xFF0D2B3E), Color(0xFF123A52), Color(0xFF1B4D6B)],
             ),
           ),
         ),
@@ -52,7 +48,7 @@ class RegisterScreen extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             const Text(
-              'Đăng ký TTTP',
+              'Đăng ký TETRA',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,

@@ -19,17 +19,17 @@ class AccountEdit(Input):
 
 class RoleEdit(Input):
     ma_quyen: Literal['LE_TAN','QUAN_LY']
-    ly_do: str = Field(min_length=1, max_length=2000)
+    ly_do: str = Field(default='', max_length=2000)
 
 
 class StatusEdit(Input):
     dang_hoat_dong: bool
-    ly_do: str = Field(min_length=1, max_length=2000)
+    ly_do: str = Field(default='', max_length=2000)
 
 
 class OperationEdit(Input):
     tinh_trang_van_hanh: Literal['SAN_SANG','CAN_DON_DEP','DANG_DON_DEP','BAO_TRI']
-    ly_do: str = Field(min_length=1, max_length=2000)
+    ly_do: str = Field(default='', max_length=2000)
     tu_ngay: date | None = None
     den_ngay: date | None = None
 
@@ -43,7 +43,7 @@ class PaymentCreate(Input):
 
 
 class RefundCreate(PaymentCreate):
-    ghi_chu: str = Field(min_length=1, max_length=2000)
+    ghi_chu: str = Field(default='', max_length=2000)
 
 
 class SocialCredential(Input):

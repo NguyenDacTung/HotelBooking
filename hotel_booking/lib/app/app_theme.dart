@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 abstract final class TttpTheme {
-  static const primary = Color(0xFF123A52); // Xanh đậm thương hiệu TTTP
+  static const primary = Color(0xFF123A52); // Xanh đậm thương hiệu TETRA
   static const secondary = Color(0xFFB58A45); // Vàng đồng ánh kim
   static const background = Color(0xFFF5F7FA); // Nền sáng hiện đại
   static const text = Color(0xFF152536); // Văn bản chính
@@ -55,18 +55,14 @@ abstract final class TttpTheme {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         minimumSize: const Size(48, 50),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: primary,
         minimumSize: const Size(48, 48),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         side: const BorderSide(color: primary),
       ),
     ),

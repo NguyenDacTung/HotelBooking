@@ -19,10 +19,7 @@ class DemoScreen extends StatelessWidget {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'An Nhiên • DEMO NGOẠI TUYẾN',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 17,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
         ),
       ),
       body: ListView(
@@ -67,17 +64,14 @@ class DemoScreen extends StatelessWidget {
           Text(
             'Một kỳ nghỉ thật an yên',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF123A52),
-                ),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF123A52),
+            ),
           ),
           const SizedBox(height: 6),
           const Text(
-            'Hình minh họa bằng biểu tượng, không phải ảnh khách sạn thực tế.',
-            style: TextStyle(
-              color: Color(0xFF5C6875),
-              fontSize: 14,
-            ),
+            'Chọn phòng phù hợp với kỳ nghỉ của bạn.',
+            style: TextStyle(color: Color(0xFF5C6875), fontSize: 14),
           ),
           const SizedBox(height: 20),
           for (final room in [
@@ -126,9 +120,7 @@ class DemoScreen extends StatelessWidget {
                           children: [
                             Text(
                               room.$1,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
+                              style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: const Color(0xFF152536),

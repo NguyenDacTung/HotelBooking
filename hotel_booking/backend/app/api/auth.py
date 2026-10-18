@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -30,12 +30,18 @@ def register(data: Register, db: Session = Depends(get_db)):
 
 
 @router.post('/auth/login')
-def login(data: Login, db: Session = Depends(get_db)):
+def login(data: Login, request: Request, db: Session = Depends(get_db)):
+    from app.api.recovery import login_limits,digest
+    from app.models import LoginAttempt
+    login_limits(db,data.email,request.client.host if request.client else 'unknown')
     account = db.scalar(select(Account).where(Account.email == data.email))
     valid = passwords.verify(data.mat_khau, account.mat_khau_bam if account and account.mat_khau_bam else dummy_hash)
     if not account or not valid:
         fail(401, 'UNAUTHENTICATED', 'Email hoặc mật khẩu không đúng')
     principal(db, account)
+    attempt=db.get(LoginAttempt,digest('login-email:'+data.email))
+    if attempt:db.delete(attempt)
+    db.commit()
     return {'access_token': issue_token(account), 'token_type': 'bearer',
             'expires_in': settings().access_token_expire_minutes * 60}
 

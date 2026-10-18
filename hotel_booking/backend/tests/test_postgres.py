@@ -144,7 +144,7 @@ def test_profile_and_cover_constraints(setup):
         db.add(account)
         with pytest.raises(IntegrityError): db.commit()
         db.rollback()
-        db.add_all([RoomImage(ma_lp=setup['type'],duong_dan=f'/uploads/{i}.png',la_anh_bia=True) for i in range(2)])
+        db.add_all([RoomImage(ma_phong=setup['room'],duong_dan=f'/uploads/{i}.png',la_anh_bia=True) for i in range(2)])
         with pytest.raises(IntegrityError): db.commit()
 
 
@@ -165,7 +165,7 @@ def test_upload_validation_and_cover_swap(setup):
     from io import BytesIO
     from PIL import Image
     client = client_for(setup,2)
-    path = f'/staff/room-types/{setup["type"]}/images'
+    path = f'/staff/rooms/{setup["room"]}/images'
     assert client.post(path,files={'file':('fake.jpg',b'not an image','image/jpeg')}).status_code == 422
     assert client.post(path,files={'file':('huge.jpg',b'x'*(5*1024*1024+1),'image/jpeg')}).status_code == 422
     image = BytesIO(); Image.new('RGB',(16,16)).save(image,format='PNG')

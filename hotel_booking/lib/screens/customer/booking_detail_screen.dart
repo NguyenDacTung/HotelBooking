@@ -1,3 +1,5 @@
+import '../staff/booking_scanner_screen.dart';
+import '../shared/reviews_screen.dart';
 import '../staff/payments_screen.dart';
 import '../../providers/notifications_provider.dart';
 
@@ -10,6 +12,7 @@ import '../../models/models.dart';
 import '../../providers/session_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/common.dart';
+import '../../widgets/booking_operations.dart';
 
 class BookingDetailScreen extends StatefulWidget {
   final String id;
@@ -52,7 +55,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     if (action == 'reject' || action == 'cancel') {
       final controller = TextEditingController();
       final key = GlobalKey<FormState>();
-      reason = await showDialog<String>(
+      reason = await formDialog<String>(
         context: context,
         builder: (c) => AlertDialog(
           backgroundColor: Colors.white,
@@ -74,14 +77,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               controller: controller,
               maxLength: 2000,
               decoration: InputDecoration(
-                labelText: 'Lý do',
+                labelText: 'Lý do (tùy chọn)',
                 filled: true,
                 fillColor: const Color(0xFFF5F7FA),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              validator: action == 'reject' ? requiredText : null,
             ),
           ),
           actions: [
@@ -139,7 +141,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         d != null &&
         dateOnly(DateTime.now().toUtc().add(const Duration(hours: 7)))
                 .compareTo(d['ngay_nhan'] as String) <
-            0;
+            1;
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -150,10 +152,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Chi tiết đặt phòng',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: [
           IconButton(
@@ -216,9 +215,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 'Phòng ${d['so_phong']}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .headlineSmall
+                                style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
                                       fontWeight: FontWeight.w800,
                                       color: const Color(0xFF123A52),
@@ -228,8 +225,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                           ),
                         ),
                         Chip(
-                          backgroundColor:
-                              const Color(0xFFB58A45).withValues(alpha: 0.14),
+                          backgroundColor: const Color(0xFFB58A45)
+                              .withValues(alpha: 0.14),
                           side: BorderSide.none,
                           labelStyle: const TextStyle(
                             color: Color(0xFFB58A45),
@@ -316,7 +313,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               const Text(
-                                'Tổng tiền',
+                                'Tổng thanh toán',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF123A52),
@@ -324,7 +321,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                                 ),
                               ),
                               Text(
-                                money(d['tong_tien'] as num),
+                                money(
+                                  (d['tong_thanh_toan'] ?? d['tong_tien'])
+                                      as num,
+                                ),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w800,
                                   color: Color(0xFF123A52),
@@ -433,6 +433,23 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              if (!loading && error == null)
+                BookingOperations(booking: d, reload: load),
+              if (!session.staff)
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => BookingQrScreen(id: widget.id),
+                    ),
+                  ),
+                  icon: const Icon(Icons.qr_code),
+                  label: const Text('Mã đặt phòng'),
+                ),
+              if (!session.staff &&
+                  session.user?['id'] == d['ma_kh'] &&
+                  d['trang_thai'] == 'DA_HOAN_TAT')
+                BookingReviewTile(bookingId: widget.id),
               if (beforeArrival &&
                   !session.staff &&
                   session.user?['id'] == d['ma_kh'] &&
@@ -503,9 +520,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
               Text(
                 'Lịch sử thay đổi',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF123A52),
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF123A52),
+                ),
               ),
               const SizedBox(height: 12),
               ...(d['lich_su'] as List? ?? []).map(

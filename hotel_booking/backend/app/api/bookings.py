@@ -34,7 +34,7 @@ def listing(db, user, page, page_size, trang_thai, ngay_nhan_tu, ngay_nhan_den):
 
 @router.get('/bookings/my')
 def mine(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
-         trang_thai: str | None = Query(None, pattern='^(CHO_XAC_NHAN|DA_XAC_NHAN|DA_HUY|DA_TU_CHOI)$'),
+         trang_thai: str | None = Query(None, pattern='^(CHO_XAC_NHAN|DA_XAC_NHAN|DA_HUY|DA_TU_CHOI|DANG_O|CHO_THANH_TOAN|DA_HOAN_TAT|HET_HAN|KHONG_DEN)$'),
          ngay_nhan_tu: date | None = None, ngay_nhan_den: date | None = None,
          user=Depends(customer), db: Session = Depends(get_db)):
     return listing(db, user, page, page_size, trang_thai, ngay_nhan_tu, ngay_nhan_den)
@@ -42,7 +42,7 @@ def mine(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
 
 @router.get('/staff/bookings')
 def all_bookings(page: int = Query(1, ge=1), page_size: int = Query(20, ge=1, le=100),
-         trang_thai: str | None = Query(None, pattern='^(CHO_XAC_NHAN|DA_XAC_NHAN|DA_HUY|DA_TU_CHOI)$'),
+         trang_thai: str | None = Query(None, pattern='^(CHO_XAC_NHAN|DA_XAC_NHAN|DA_HUY|DA_TU_CHOI|DANG_O|CHO_THANH_TOAN|DA_HOAN_TAT|HET_HAN|KHONG_DEN)$'),
          ngay_nhan_tu: date | None = None, ngay_nhan_den: date | None = None,
          user=Depends(staff), db: Session = Depends(get_db)):
     return listing(db, user, page, page_size, trang_thai, ngay_nhan_tu, ngay_nhan_den)

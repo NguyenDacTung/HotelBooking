@@ -35,10 +35,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Thông báo',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: [
           TextButton(
@@ -128,10 +125,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: (unread
-                              ? const Color(0xFFB58A45)
-                              : const Color(0xFF123A52))
-                          .withValues(alpha: 0.12),
+                      color:
+                          (unread
+                                  ? const Color(0xFFB58A45)
+                                  : const Color(0xFF123A52))
+                              .withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(

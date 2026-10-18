@@ -171,10 +171,9 @@ class _RoomStatusScreenState extends State<RoomStatusScreen> {
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: reason,
-                    validator: requiredText,
                     maxLength: 2000,
                     decoration: InputDecoration(
-                      labelText: 'Lý do',
+                      labelText: 'Lý do (tùy chọn)',
                       filled: true,
                       fillColor: const Color(0xFFF5F7FA),
                       border: OutlineInputBorder(
@@ -541,6 +540,11 @@ class _RoomStatusScreenState extends State<RoomStatusScreen> {
                       const Align(
                         alignment: Alignment.centerLeft,
                         child: Chip(label: Text('Đang sử dụng')),
+                      ),
+                    if (room['trang_thai_su_dung'] == 'DA_DAT_TRUOC')
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: Chip(label: Text('Đã đặt trước')),
                       ),
                     if (bookings.isNotEmpty || closures.isNotEmpty) ...[
                       const SizedBox(height: 12),

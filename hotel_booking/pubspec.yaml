@@ -57,6 +57,23 @@ dependencies:
   flutter_facebook_auth: ^7.1.2
   flutter_localizations:
     sdk: flutter
+  firebase_core: ^4.0.0
+  firebase_messaging: ^16.0.0
+  flutter_easyloading: ^3.0.5
+  table_calendar: ^3.2.0
+  easy_date_timeline: ^2.0.9
+  crop_your_image: ^2.0.0
+  file_picker: ^11.0.3
+  pdfrx: ^2.6.5
+  package_info_plus: ^9.0.1
+  device_info_plus: ^12.4.0
+  video_player: ^2.14.1
+  geolocator: ^14.0.2
+  flutter_osm_plugin: 1.4.6
+  mobile_scanner: ^7.4.2
+  qr_flutter: ^4.1.0
+  local_auth: ^3.0.2
+  feedback: ^3.2.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.4

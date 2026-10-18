@@ -33,7 +33,7 @@ class ApiService {
   Future<void> Function()? onUnauthorized;
   // Only method/path/status or an error category; never payloads or headers.
   void _trace(String method, String path, String outcome) {
-    if (kDebugMode) debugPrint('[TTTP API] $method $path -> $outcome');
+    if (kDebugMode) debugPrint('[TETRA API] $method $path -> $outcome');
   }
 
   ApiService({
@@ -41,7 +41,7 @@ class ApiService {
     this.baseUrl = apiBaseUrl,
     this.requestTimeout = const Duration(seconds: 20),
   }) : client = client ?? http.Client() {
-    if (kDebugMode) debugPrint('[TTTP API] baseUrl=$baseUrl');
+    if (kDebugMode) debugPrint('[TETRA API] baseUrl=$baseUrl');
   }
   Future<dynamic> request(
     String method,
@@ -93,9 +93,15 @@ class ApiService {
     return _decode(response, method: method, path: path);
   }
 
-  Future<dynamic> upload(String path, List<int> bytes, String name) async {
+  Future<dynamic> upload(
+    String path,
+    List<int> bytes,
+    String name, {
+    Map<String, String> fields = const {},
+  }) async {
     final req = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'))
       ..headers.addAll({if (token != null) 'Authorization': 'Bearer $token'})
+      ..fields.addAll(fields)
       ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: name));
     try {
       return await _decode(
@@ -163,6 +169,26 @@ class ApiService {
       );
     }
     return data;
+  }
+
+  Future<void> feedbackText(String text, Json device) async {
+    final req = http.MultipartRequest('POST', Uri.parse('$baseUrl/feedback'))
+      ..headers.addAll({if (token != null) 'Authorization': 'Bearer $token'})
+      ..fields.addAll({'noi_dung': text, 'thiet_bi': jsonEncode(device)});
+    try {
+      await _decode(
+        await client
+            .send(req)
+            .then(http.Response.fromStream)
+            .timeout(requestTimeout),
+      );
+    } on TimeoutException {
+      throw const ApiError(
+        'Chưa xác định kết quả gửi; kiểm tra trước khi gửi lại.',
+      );
+    } on http.ClientException {
+      throw const ApiError('Không gửi được phản hồi; kiểm tra kết nối.');
+    }
   }
 
   String imageUrl(String path) => Uri.parse(baseUrl).resolve(path).toString();

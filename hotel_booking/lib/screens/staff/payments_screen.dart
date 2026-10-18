@@ -3,6 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
+import 'dart:convert';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../models/models.dart';
 import '../../services/api_service.dart';
 import '../../providers/session_provider.dart';
@@ -22,16 +26,65 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   String? error;
   bool busy = true;
   int page = 1, total = 0;
+  Json? pending;
+  late final String pendingKey;
+  Future<void> persistPending(Json? value) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (value == null) {
+      await prefs.remove(pendingKey);
+    } else {
+      await prefs.setString(pendingKey, jsonEncode(value));
+    }
+    if (mounted) setState(() => pending = value);
+  }
+
+  Future<void> retryPending() async {
+    final value = pending;
+    if (value == null) return;
+    setState(() => busy = true);
+    try {
+      await context.read<ApiService>().request(
+        'POST',
+        value['path'] as String,
+        body: value['body'] as Json,
+      );
+      await persistPending(null);
+    } catch (e) {
+      if (e is ApiError &&
+          e.status != null &&
+          e.status! >= 400 &&
+          e.status! < 500) {
+        await persistPending(null);
+      }
+      if (mounted) message(context, e);
+    } finally {
+      if (mounted) await load();
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    pendingKey =
+        'tttp_payment_${context.read<SessionProvider>().user?['id']}_${widget.bookingId}';
     load();
   }
 
   Future<void> load({bool more = false}) async {
-    setState(() => busy = true);
+    setState(() {
+      busy = true;
+      error = null;
+      if (!more) {
+        totals = null;
+        booking = null;
+        items = [];
+      }
+    });
     try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      final stored = prefs.getString(pendingKey);
+      if (stored != null) pending = jsonDecode(stored) as Json;
       final next = more ? page + 1 : 1;
       final api = context.read<ApiService>();
       final values = await Future.wait([
@@ -61,6 +114,10 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
   }
 
   Future<void> record([Json? original]) async {
+    if (pending != null) {
+      await retryPending();
+      return;
+    }
     final requestId = const Uuid().v4();
     final amount = TextEditingController(),
         note = TextEditingController(),
@@ -69,7 +126,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
     String method = 'TIEN_MAT';
     bool confirmed = false, sending = false;
     String? localError;
-    await showDialog<void>(
+    await formDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (c) => StatefulBuilder(
@@ -84,10 +141,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (original == null
-                          ? const Color(0xFF237A57)
-                          : const Color(0xFFB42318))
-                      .withValues(alpha: 0.12),
+                  color:
+                      (original == null
+                              ? const Color(0xFF237A57)
+                              : const Color(0xFFB42318))
+                          .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
@@ -210,10 +268,11 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                     controller: note,
                     enabled: !sending,
                     maxLength: 2000,
-                    validator: original != null ? requiredText : null,
+
                     decoration: InputDecoration(
-                      labelText:
-                          original == null ? 'Ghi chú' : 'Lý do hoàn tiền',
+                      labelText: original == null
+                          ? 'Ghi chú'
+                          : 'Ghi chú hoàn tiền (tùy chọn)',
                       prefixIcon: const Icon(Icons.notes_rounded),
                       filled: true,
                       fillColor: const Color(0xFFF5F7FA),
@@ -279,26 +338,49 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                       if (!key.currentState!.validate()) return;
                       set(() => sending = true);
                       try {
+                        final path = original == null
+                            ? '/staff/bookings/${widget.bookingId}/payments'
+                            : '/admin/payments/${original['id']}/refunds';
+                        final body = <String, dynamic>{
+                          'request_id': requestId,
+                          'so_tien': int.parse(amount.text),
+                          'phuong_thuc': method,
+                          'ghi_chu': note.text.trim().isEmpty
+                              ? null
+                              : note.text.trim(),
+                          'ma_tham_chieu': reference.text.trim().isEmpty
+                              ? null
+                              : reference.text.trim(),
+                        };
+                        await persistPending({'path': path, 'body': body});
+                        if (!mounted) return;
                         await context.read<ApiService>().request(
                           'POST',
-                          original == null
-                              ? '/staff/bookings/${widget.bookingId}/payments'
-                              : '/admin/payments/${original['id']}/refunds',
-                          body: {
-                            'request_id': requestId,
-                            'so_tien': int.parse(amount.text),
-                            'phuong_thuc': method,
-                            'ghi_chu': note.text.trim().isEmpty
-                                ? null
-                                : note.text.trim(),
-                            'ma_tham_chieu': reference.text.trim().isEmpty
-                                ? null
-                                : reference.text.trim(),
-                          },
+                          path,
+                          body: body,
                         );
+                        await persistPending(null);
                         if (c.mounted) Navigator.pop(c);
                       } catch (e) {
-                        if (c.mounted) set(() => localError = '$e');
+                        if (e is ApiError &&
+                            e.status != null &&
+                            e.status! >= 400 &&
+                            e.status! < 500) {
+                          await persistPending(null);
+                        }
+                        if (c.mounted) {
+                          if (pending != null) {
+                            Navigator.pop(c);
+                            if (mounted) {
+                              message(
+                                context,
+                                'Chưa xác định kết quả giao dịch. Dùng nút kiểm tra / thử lại để tránh ghi nhận trùng.',
+                              );
+                            }
+                          } else {
+                            set(() => localError = '$e');
+                          }
+                        }
                       } finally {
                         if (c.mounted) set(() => sending = false);
                       }
@@ -309,6 +391,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         ),
       ),
     );
+    amount.dispose();
+    note.dispose();
+    reference.dispose();
     if (mounted) await load();
   }
 
@@ -325,10 +410,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Sổ thu / hoàn tiền',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: RefreshIndicator(
@@ -337,6 +419,23 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (pending != null)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Có giao dịch chưa xác định kết quả. Không thu hoặc hoàn tiền lần nữa.',
+                      ),
+                      FilledButton(
+                        onPressed: busy ? null : retryPending,
+                        child: const Text('Kiểm tra / thử lại giao dịch cũ'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
@@ -356,7 +455,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Thu tiền thủ công · Không phải thanh toán trực tuyến',
+                      'Ghi nhận thu/hoàn thực tế. Giao dịch sandbox không tính vào số tiền đã thanh toán.',
                       style: TextStyle(
                         color: Color(0xFF123A52),
                         fontWeight: FontWeight.w600,
@@ -412,10 +511,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                             shape: BoxShape.circle,
                             color: e.key == 'da_thu' || e.key == 'thu_rong'
                                 ? const Color(0xFF237A57)
-                                : e.key == 'da_hoan' ||
-                                        e.key == 'can_hoan_tien'
-                                    ? const Color(0xFFB42318)
-                                    : const Color(0xFFB58A45),
+                                : e.key == 'da_hoan' || e.key == 'can_hoan_tien'
+                                ? const Color(0xFFB42318)
+                                : const Color(0xFFB58A45),
                           ),
                         ),
                         title: Text(
@@ -440,7 +538,15 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              if (booking?['trang_thai'] == 'DA_XAC_NHAN' &&
+              if (error == null &&
+                  !busy &&
+                  [
+                    'DA_XAC_NHAN',
+                    'DANG_O',
+                    'CHO_THANH_TOAN',
+                    'DA_HUY',
+                    'KHONG_DEN',
+                  ].contains(booking?['trang_thai']) &&
                   (totals!['con_phai_thu'] as num) > 0)
                 SizedBox(
                   height: 50,
@@ -451,7 +557,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                         borderRadius: BorderRadius.circular(14),
                       ),
                     ),
-                    onPressed: busy ? null : () => record(),
+                    onPressed: busy || pending != null ? null : () => record(),
                     icon: const Icon(Icons.payments_outlined),
                     label: const Text(
                       'Ghi nhận thu tiền',
@@ -469,17 +575,17 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
             ),
             ...items.map((p) {
               final isThu = p['loai'] == 'THU';
-              final statusColor =
-                  isThu ? const Color(0xFF237A57) : const Color(0xFFB42318);
+              final sandbox = p['environment'] == 'sandbox';
+              final statusColor = isThu
+                  ? const Color(0xFF237A57)
+                  : const Color(0xFFB42318);
               return Card(
                 elevation: 0,
                 margin: const EdgeInsets.only(bottom: 12),
                 color: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: statusColor.withValues(alpha: 0.25),
-                  ),
+                  side: BorderSide(color: statusColor.withValues(alpha: 0.25)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -505,10 +611,8 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              '${isThu ? 'Thu' : 'Hoàn'} · ${money(p['so_tien'] as num)}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
+                              '${sandbox ? '[SANDBOX] ' : ''}${isThu ? 'Thu' : 'Hoàn'} · ${money(p['so_tien'] as num)}',
+                              style: Theme.of(context).textTheme.titleLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 17,
@@ -542,9 +646,13 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            p['phuong_thuc'] == 'TIEN_MAT'
-                                ? 'Tiền mặt'
-                                : 'Chuyển khoản',
+                            ({
+                                  'TIEN_MAT': 'Tiền mặt',
+                                  'CHUYEN_KHOAN': 'Chuyển khoản',
+                                  'MOMO': 'MoMo',
+                                  'VNPAY': 'VNPAY',
+                                }[p['phuong_thuc']] ??
+                                '${p['phuong_thuc']}'),
                             style: const TextStyle(
                               color: Color(0xFF152536),
                               fontWeight: FontWeight.w600,
@@ -571,7 +679,7 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                           ),
                         ),
                       ],
-                      if (session.manager && isThu) ...[
+                      if (session.manager && isThu && !sandbox) ...[
                         const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
@@ -586,7 +694,9 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            onPressed: busy ? null : () => record(p),
+                            onPressed: busy || pending != null
+                                ? null
+                                : () => record(p),
                             child: const Text(
                               'Ghi nhận hoàn cho khoản thu này',
                             ),

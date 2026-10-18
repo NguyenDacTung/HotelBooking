@@ -1,3 +1,32 @@
+# TETRA Hotel — đợt tích hợp 18/10/2026
+
+- Đã thêm đánh giá sau trả phòng thực tế, quản trị ẩn/hiện, Drawer dùng chung theo vai trò, cài đặt cá nhân/hệ thống và capabilities công khai an toàn.
+- Thêm chuỗi ảnh crop/preview/avatar, CSV preview/confirm, PDF preview, lịch phòng/timeline, bản đồ, QR tra cứu, khóa phiên thiết bị, góp ý có ảnh riêng và video cấu hình.
+- Chuẩn bị adapter MoMo/VNPAY server, đối soát chữ ký/idempotency/cạnh tranh và cách ly sandbox. Dịch vụ ngoài chưa có credentials nên không khẳng định đã thanh toán/gửi email/push thật.
+- Tất cả lý do tùy chọn; nhận/trả phòng không hỏi lý do. Nhãn Android TETRA Hotel, applicationId và dữ liệu giữ nguyên.
+- PostgreSQL đã migrate 0007, có dump và đối chiếu dữ liệu cũ; không reset hotel_booking. Kiểm thử tiền/đánh giá/CSV có cạnh tranh trên hotel_booking_test; 89 ca backend khác nhau và lượt đầy đủ 34 test Flutter đạt. Analyze không lỗi.
+- Đã xử lý tương thích KGP/AGP9 của file_picker/OSM; pin OSM 1.4.6 để giữ minSdk 24. APK build/cài thành công SM A135F. QA điện thoại đã thử đánh giá sau trả phòng, gửi góp ý, lịch/tra cứu mã nhân viên; sửa và kiểm tra lại bản đồ lỗi 403. Bằng chứng và giới hạn xem báo cáo chi tiết.
+- Đã thử quản trị ẩn đánh giá với lý do trống, cập nhật góp ý, render PDF và mở/hủy hộp chọn CSV Android. Backend đã khôi phục hotel_booking, đối chiếu dữ liệu không đổi; health/db và tải phòng trên điện thoại HTTP 200 qua Wi-Fi, DEMO_MODE=false, không adb reverse.
+- Điểm vào: [screens.md](screens.md); quyết định: [integration_decisions.md](integration_decisions.md); cấu hình: [external_configuration.md](external_configuration.md); bằng chứng/giới hạn: [integration_acceptance.md](integration_acceptance.md).
+
+---
+
+## Nhật ký các phiên bản trước
+
+# Hoàn thiện nâng cấp QA01–QA11 — 18/10/2026
+
+- Đã sửa các mục đã duyệt, thêm nhận/trả phòng, phụ thu, hủy/no-show/giữ chỗ, đặt hộ/đổi lịch, khôi phục mật khẩu có SMTP, chuẩn bị OAuth/FCM và nút online chưa cấu hình.
+- Ảnh thuộc từng phòng; loại phòng chỉ còn thông tin/tiện nghi. Danh mục chính có 13 loại, 22 phòng, 39 ảnh chụp thật có nguồn. Gỡ giải thích đồ án khỏi UI khách.
+- Migration 0002→0004 đã chạy, có bản dump/uploads/source trước thay đổi và kiểm tra nguyên vẹn cột/dòng cũ. Không reset hotel_booking; không đổi mật khẩu tài khoản cũ.
+- **73 bài backend đạt (unit/API/PostgreSQL/cạnh tranh), 25 bài Flutter đạt, analyze không có lỗi.** Kiểm thử DB riêng và kiểm thử điện thoại đều đối chiếu database chính không đổi.
+- SM A135F đã chạy qua đăng ký/đăng nhập, xác nhận cùng ngày, nhận phòng, thêm phụ thu, yêu cầu trả, thu thử và hoàn tất trả trên hotel_booking_test. Đã sửa thêm lỗi đóng dialog gây màn hình đỏ, có test hồi quy và kiểm tra lại trên điện thoại.
+- Backend đã trở về hotel_booking, API Wi-Fi 192.168.31.112:8000, DEMO_MODE=false, không adb reverse. Các dịch vụ ngoài chưa có credentials nên chưa E2E thật.
+- Xem chi tiết bằng chứng và phần chưa kiểm thử: [upgrade_verification.md](upgrade_verification.md). Cấu hình dịch vụ: [service_configuration.md](service_configuration.md). Chính sách: [business_rules.md](business_rules.md).
+
+---
+
+## Nhật ký phiên bản trước (các giới hạn cũ đã được thay thế bởi bản cập nhật trên)
+
 # Tiến độ triển khai — 17/10/2026
 
 ## Cập nhật mới nhất: trang chủ và phòng đề xuất

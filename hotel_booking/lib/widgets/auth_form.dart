@@ -1,4 +1,9 @@
+import '../providers/capabilities_provider.dart';
+
 import 'package:flutter/material.dart';
+
+import '../screens/auth/recovery_screen.dart';
+
 import 'package:provider/provider.dart';
 
 import '../providers/session_provider.dart';
@@ -83,8 +88,31 @@ class _AuthFormState extends State<AuthForm> {
     }
   }
 
+  Future<void> fingerprint() async {
+    // Deliberately do not validate email/password for biometric sign-in.
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      await context.read<SessionProvider>().loginWithBiometric();
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) setState(() => error = '$e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final caps = context.watch<CapabilitiesProvider?>();
+    final googleReady =
+        SocialLoginService.googleClientId.isNotEmpty &&
+        (caps?.ready('social_login', 'google') ?? false);
+    final facebookReady =
+        SocialLoginService.facebookEnabled &&
+        (caps?.ready('social_login', 'facebook') ?? false);
     return Form(
       key: form,
       child: Column(
@@ -93,9 +121,9 @@ class _AuthFormState extends State<AuthForm> {
           Text(
             widget.register ? 'Tạo tài khoản' : 'Chào mừng trở lại',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF123A52),
-                ),
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF123A52),
+            ),
           ),
           const SizedBox(height: 20),
           if (widget.register) ...[
@@ -117,6 +145,8 @@ class _AuthFormState extends State<AuthForm> {
             const SizedBox(height: 12),
             TextFormField(
               controller: phone,
+              validator: (v) =>
+                  (v?.trim().isEmpty ?? true) ? null : phoneText(v),
               maxLength: 20,
               keyboardType: TextInputType.phone,
               decoration: InputDecoration(
@@ -145,7 +175,8 @@ class _AuthFormState extends State<AuthForm> {
                 borderSide: BorderSide.none,
               ),
             ),
-            validator: (v) => v != null &&
+            validator: (v) =>
+                v != null &&
                     RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v.trim())
                 ? null
                 : 'Email không hợp lệ',
@@ -168,13 +199,14 @@ class _AuthFormState extends State<AuthForm> {
                 icon: Icon(hidden ? Icons.visibility : Icons.visibility_off),
               ),
             ),
-            validator: (v) => v == null ||
+            validator: (v) =>
+                v == null ||
                     v.isEmpty ||
                     v.length > 128 ||
                     (widget.register && v.length < 8)
                 ? (widget.register
-                    ? 'Mật khẩu từ 8 đến 128 ký tự'
-                    : 'Vui lòng nhập mật khẩu')
+                      ? 'Mật khẩu từ 8 đến 128 ký tự'
+                      : 'Vui lòng nhập mật khẩu')
                 : null,
           ),
           if (widget.register) ...[
@@ -224,8 +256,8 @@ class _AuthFormState extends State<AuthForm> {
                 busy
                     ? 'Đang xử lý…'
                     : widget.register
-                        ? 'Đăng ký'
-                        : 'Đăng nhập',
+                    ? 'Đăng ký'
+                    : 'Đăng nhập',
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
@@ -234,6 +266,30 @@ class _AuthFormState extends State<AuthForm> {
             ),
           ),
           if (!widget.register) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: busy ? null : fingerprint,
+              icon: const Icon(Icons.fingerprint, size: 30),
+              label: const Text('Đăng nhập bằng vân tay'),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Text(
+                'Dùng tài khoản đã bật vân tay trong Cài đặt trên điện thoại này.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+            TextButton(
+              onPressed: busy
+                  ? null
+                  : () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RecoveryScreen(),
+                      ),
+                    ),
+              child: const Text('Quên mật khẩu?'),
+            ),
             TextButton(
               style: TextButton.styleFrom(
                 foregroundColor: const Color(0xFFB58A45),
@@ -241,16 +297,17 @@ class _AuthFormState extends State<AuthForm> {
               onPressed: busy
                   ? null
                   : () => Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const RegisterScreen(),
-                        ),
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RegisterScreen(),
                       ),
+                    ),
               child: const Text(
                 'Tạo tài khoản mới',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
+            if (caps?.error != null) ErrorPanel(caps!.unavailable, caps.load),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: Divider(height: 1),
@@ -264,14 +321,10 @@ class _AuthFormState extends State<AuthForm> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: busy || SocialLoginService.googleClientId.isEmpty
-                  ? null
-                  : () => social('google'),
+              onPressed: busy || !googleReady ? null : () => social('google'),
               icon: const Icon(Icons.g_mobiledata, color: Color(0xFFB58A45)),
               label: Text(
-                SocialLoginService.googleClientId.isEmpty
-                    ? 'Google · Chưa cấu hình'
-                    : 'Tiếp tục với Google',
+                !googleReady ? 'Google · Chưa cấu hình' : 'Tiếp tục với Google',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
@@ -285,12 +338,12 @@ class _AuthFormState extends State<AuthForm> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: busy || !SocialLoginService.facebookEnabled
+              onPressed: busy || !facebookReady
                   ? null
                   : () => social('facebook'),
               icon: const Icon(Icons.facebook, color: Color(0xFF123A52)),
               label: Text(
-                SocialLoginService.facebookEnabled
+                facebookReady
                     ? 'Tiếp tục với Facebook'
                     : 'Facebook · Chưa cấu hình',
                 style: const TextStyle(fontWeight: FontWeight.w600),

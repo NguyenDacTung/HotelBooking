@@ -1,3 +1,41 @@
+# TETRA Hotel — cập nhật tích hợp 18/10/2026
+
+Trong app dùng tên **TETRA**, nhãn Android **TETRA Hotel**; applicationId vẫn `com.example.hotel_booking`. PostgreSQL là database duy nhất của backend; không reset dữ liệu. Các khóa kỹ thuật/email demo có chữ TTTP được giữ để tương thích bản cũ.
+
+- [Màn hình và điểm vào](docs/screens.md) · [Quyết định điều chỉnh đặc tả](docs/integration_decisions.md) · [Thư viện/phiên bản](docs/integration_inventory.md) · [Ánh xạ học phần](docs/course_mapping.md)
+- [Cấu hình dịch vụ ngoài](docs/external_configuration.md) · [Nghiệm thu và phần chưa kiểm thử](docs/integration_acceptance.md)
+- Tất cả lý do là tùy chọn; nhận/trả phòng không còn hộp yêu cầu lý do. Quyền, trạng thái đơn, phụ thu và đối chiếu công nợ vẫn được kiểm tra.
+
+Chạy từ thư mục chứa `pubspec.yaml`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_backend.ps1 -Lan
+```
+
+PostgreSQL Windows tự chạy theo cấu hình hiện tại; không cần mở pgAdmin. Điện thoại và máy tính phải cùng mạng có thể truy cập nhau, máy tính/backend đang bật. API bản LAN là `http://192.168.31.112:8000`, không cần USB/adb reverse; nếu đổi IP, sửa `API_BASE_URL` lúc build.
+
+```powershell
+# Máy đã có .env: giữ nguyên mật khẩu cục bộ, không đưa vào chat hoặc gói code.
+# Sao lưu rồi migrate có kiểm tra các cột/dòng cũ, tuyệt đối không reset:
+.\backend\.venv\Scripts\python.exe .\scripts\migrate_preserving_data.py
+# Chỉ khi muốn bổ sung seed không ghi đè tài khoản/dữ liệu đã có:
+Push-Location backend
+.\.venv\Scripts\python.exe manage_local.py prepare
+# Test tự trỏ hotel_booking_test và đối chiếu hotel_booking không đổi:
+.\.venv\Scripts\python.exe manage_local.py test-postgres
+Pop-Location
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --debug --target-platform android-arm --dart-define=DEMO_MODE=false --dart-define=API_BASE_URL=http://192.168.31.112:8000
+```
+
+Lệnh ARM32 dành cho SM A135F đang kiểm tra; khi phát hành cho máy khác dùng build/split ABI phù hợp và cấu hình ký release riêng. `--debug` chưa phải bản phát hành lên kho ứng dụng. MoMo/VNPAY, OAuth, email và push cần cấu hình của chủ dự án; không suy diễn nút/cấu hình hoặc fixture thành giao dịch/dịch vụ thật đã hoạt động.
+
+## Ghi chép các phiên bản trước
+
+Các hướng dẫn USB và tên TTTP dưới đây thuộc lịch sử/cấu hình thay thế. Ưu tiên bản Wi-Fi cùng tài liệu cập nhật ở trên.
+
 > **Hiện tại dùng Wi-Fi:** APK trên SM A135F gọi `http://192.168.31.112:8000`, không cần adb reverse. Xem [khởi động mỗi ngày, kiểm chứng phiên và điều kiện mạng](docs/wifi_running.md). Chạy `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_backend.ps1 -Lan` từ thư mục gốc; PostgreSQL tự khởi động, không cần pgAdmin. Cấu hình VS Code mới: **TTTP - WiFi LAN - API PostgreSQL**.
 
 > **Bản nâng cấp TTTP 17/10/2026:** xem [hướng dẫn chạy và API mới](docs/upgrade_notes.md), [trạng thái nghiệm thu](docs/acceptance_checklist.md), [màn hình](docs/screens.md), [quyền](docs/permission_matrix.md), [OAuth](docs/social_login_setup.md), [ảnh/icon](docs/assets.md). Backend dùng cổng **8000**; ADB `reverse tcp:8000 tcp:8000`. Chọn cấu hình VS Code **TTTP - SM A135F - API PostgreSQL** để tự kiểm tra API và khôi phục ánh xạ USB trước khi chạy. Các mục baseline bên dưới mô tả phiên bản trước nâng cấp.
@@ -125,3 +163,7 @@ Từ gốc Flutter: `flutter analyze`, `flutter test`.
 Kiểm thử tích hợp chỉ chạy trên DB test riêng. Dùng `manage_local.py test-postgres` như hướng dẫn bên trên để cấp URL an toàn từ .env. Fixture chỉ chấp nhận chính xác `hotel_booking_test`, kiểm tra tên DB thực, migrate rồi **TRUNCATE DB test** trước mỗi bài; không reset hotel_booking. Nếu chạy pytest trực tiếp mà không có TEST_DATABASE_URL thì các bài PostgreSQL bị skip, không được coi là đã đạt.
 
 Xem [docs/test_cases.md](docs/test_cases.md), [docs/business_rules.md](docs/business_rules.md), [docs/api.md](docs/api.md). Những test chưa chạy không được xem là đã đạt.
+# Nâng cấp nghiệp vụ 18/10/2026
+
+Hướng dẫn cấu hình Google/Facebook, SMTP và Firebase: [docs/service_configuration.md](docs/service_configuration.md). Chính sách lưu trú/phụ thu và bảo toàn dữ liệu: [docs/business_rules.md](docs/business_rules.md). Sau khi cập nhật source, chạy `backend/.venv/Scripts/python.exe -m alembic upgrade head` từ thư mục backend trước khi khởi động server mới. Seed danh mục bổ sung: `python -m app.seed_operations`; chỉ thêm `--replace-room-images` khi muốn thay toàn bộ ảnh danh mục và lưu bản cũ. Không reset database.
+

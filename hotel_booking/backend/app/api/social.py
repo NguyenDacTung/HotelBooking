@@ -24,7 +24,7 @@ def verify(provider, credential):
             payload = id_token.verify_oauth2_token(credential, Request(), config.google_client_id)
             if not payload.get('sub') or payload.get('aud') != config.google_client_id:
                 raise ValueError()
-            return {'subject':payload['sub'],'name':payload.get('name') or 'Khách TTTP',
+            return {'subject':payload['sub'],'name':payload.get('name') or 'Khách TETRA',
                     'email':payload.get('email') if payload.get('email_verified') is True else None}
         except Exception:
             fail(401,'INVALID_SOCIAL_TOKEN','Không xác minh được đăng nhập Google')
@@ -47,7 +47,7 @@ def verify(provider, credential):
                 profile.raise_for_status()
                 body = profile.json()
                 if body['id'] != info['user_id']: raise ValueError()
-                return {'subject':body['id'],'name':body.get('name') or 'Khách TTTP','email':None}
+                return {'subject':body['id'],'name':body.get('name') or 'Khách TETRA','email':None}
         except Exception:
             fail(401,'INVALID_SOCIAL_TOKEN','Không xác minh được đăng nhập Facebook')
     fail(422,'VALIDATION_ERROR','Nhà cung cấp không hợp lệ')

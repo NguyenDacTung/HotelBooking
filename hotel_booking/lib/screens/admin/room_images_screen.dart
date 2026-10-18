@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:image_picker/image_picker.dart';
+
+import '../../widgets/image_crop.dart';
 
 import '../../models/models.dart';
 import '../../services/api_service.dart';
 import '../../widgets/common.dart';
 
 class RoomImagesScreen extends StatefulWidget {
-  final int typeId;
-  const RoomImagesScreen({super.key, required this.typeId});
+  final int? typeId, roomId;
+  const RoomImagesScreen({super.key, this.typeId, this.roomId});
   @override
   State<RoomImagesScreen> createState() => _RoomImagesScreenState();
 }
@@ -49,14 +50,18 @@ class _RoomImagesScreenState extends State<RoomImagesScreen> {
     });
     try {
       final values = await Future.wait([
-        all('/staff/room-types'),
+        all(widget.roomId == null ? '/staff/room-types' : '/staff/rooms'),
         all('/staff/amenities'),
       ]);
-      final type = values[0].firstWhere((e) => e['ma_lp'] == widget.typeId);
+      final type = values[0].firstWhere(
+        (e) => widget.roomId == null
+            ? e['ma_lp'] == widget.typeId
+            : e['ma_phong'] == widget.roomId,
+      );
       if (mounted) {
         setState(() {
           amenities = values[1];
-          images = (type['hinh_anh'] as List).cast<Json>();
+          images = (type['hinh_anh'] as List? ?? []).cast<Json>();
           selected = (type['tien_nghi'] as List)
               .map((e) => e['ma_tn'] as int)
               .toSet();
@@ -94,12 +99,9 @@ class _RoomImagesScreenState extends State<RoomImagesScreen> {
         backgroundColor: const Color(0xFF123A52),
         foregroundColor: Colors.white,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        title: const Text(
-          'Tiện nghi và ảnh',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+        title: Text(
+          widget.roomId == null ? 'Tiện nghi loại phòng' : 'Ảnh phòng',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
         actions: [
           IconButton(
@@ -124,230 +126,223 @@ class _RoomImagesScreenState extends State<RoomImagesScreen> {
             ErrorPanel(error!, load),
           ],
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF123A52).withValues(alpha: 0.05),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFB58A45).withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(10),
+          if (widget.roomId == null)
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF123A52).withValues(alpha: 0.05),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFB58A45)
+                              .withValues(alpha: 0.14),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.check_circle_outline_rounded,
+                          color: Color(0xFFB58A45),
+                          size: 20,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.check_circle_outline_rounded,
-                        color: Color(0xFFB58A45),
-                        size: 20,
+                      const SizedBox(width: 10),
+                      Text(
+                        'Tiện nghi',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF123A52),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Tiện nghi',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF123A52),
-                          ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...amenities.map(
-                  (a) => CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    activeColor: const Color(0xFF123A52),
-                    title: Text(
-                      a['ten_tien_nghi'] as String,
-                      style: const TextStyle(
-                        color: Color(0xFF152536),
-                        fontWeight: FontWeight.w500,
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  ...amenities.map(
+                    (a) => CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: const Color(0xFF123A52),
+                      title: Text(
+                        a['ten_tien_nghi'] as String,
+                        style: const TextStyle(
+                          color: Color(0xFF152536),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                    value: selected.contains(a['ma_tn']),
-                    onChanged: busy
-                        ? null
-                        : (v) => setState(() {
+                      value: selected.contains(a['ma_tn']),
+                      onChanged: busy
+                          ? null
+                          : (v) => setState(() {
                               if (v == true) {
                                 selected.add(a['ma_tn'] as int);
                               } else {
                                 selected.remove(a['ma_tn']);
                               }
                             }),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  height: 48,
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF123A52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
                     ),
-                    onPressed: busy
-                        ? null
-                        : () => mutate((api) async {
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 48,
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF123A52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: busy
+                          ? null
+                          : () => mutate((api) async {
                               await api.request(
                                 'PUT',
                                 '/staff/room-types/${widget.typeId}/amenities',
                                 body: {'ma_tn': selected.toList()},
                               );
                             }),
-                    child: const Text(
-                      'Lưu tiện nghi',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+                      child: const Text(
+                        'Lưu tiện nghi',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
                     ),
+                  ),
+                ],
+              ),
+            ),
+          if (widget.roomId != null) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Divider(height: 1),
+            ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF123A52).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.photo_library_outlined,
+                    color: Color(0xFF123A52),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Ảnh phòng',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF123A52),
                   ),
                 ),
               ],
             ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Divider(height: 1),
-          ),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF123A52).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 48,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF123A52),
+                  backgroundColor: Colors.white,
+                  side: const BorderSide(color: Color(0xFF123A52)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.photo_library_outlined,
-                  color: Color(0xFF123A52),
-                  size: 20,
+                onPressed: busy
+                    ? null
+                    : () async {
+                        final bytes = await chooseCroppedImage(context);
+                        if (bytes == null || !mounted) return;
+                        await mutate((api) async {
+                          await api.upload(
+                            '/staff/rooms/${widget.roomId}/images',
+                            bytes,
+                            'room.png',
+                          );
+                        });
+                      },
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: const Text(
+                  'Chọn ảnh JPEG / PNG / WebP',
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'Ảnh loại phòng',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF123A52),
-                    ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 48,
-            child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF123A52),
-                backgroundColor: Colors.white,
-                side: const BorderSide(color: Color(0xFF123A52)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              onPressed: busy
-                  ? null
-                  : () async {
-                      final file = await ImagePicker().pickImage(
-                        source: ImageSource.gallery,
-                      );
-                      if (file == null || !mounted) return;
-                      if (await file.length() > 5 * 1024 * 1024) {
-                        if (context.mounted) {
-                          message(context, 'Ảnh tối đa 5 MiB');
-                        }
-                        return;
-                      }
-                      final bytes = await file.readAsBytes();
-                      if (!mounted) return;
-                      await mutate((api) async {
-                        await api.upload(
-                          '/staff/room-types/${widget.typeId}/images',
-                          bytes,
-                          file.name,
-                        );
-                      });
-                    },
-              icon: const Icon(Icons.add_photo_alternate_outlined),
-              label: const Text(
-                'Chọn ảnh JPEG / PNG / WebP',
-                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ...images.map(
-            (i) => Card(
-              elevation: 0,
-              margin: const EdgeInsets.only(bottom: 16),
-              color: Colors.white,
-              clipBehavior: Clip.antiAlias,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
-                side: BorderSide(
-                  color: (i['la_anh_bia'] as bool)
-                      ? const Color(0xFFB58A45)
-                      : const Color(0xFFE2E8F0),
-                  width: (i['la_anh_bia'] as bool) ? 1.5 : 1.0,
+            const SizedBox(height: 16),
+            ...images.map(
+              (i) => Card(
+                elevation: 0,
+                margin: const EdgeInsets.only(bottom: 16),
+                color: Colors.white,
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(
+                    color: (i['la_anh_bia'] as bool)
+                        ? const Color(0xFFB58A45)
+                        : const Color(0xFFE2E8F0),
+                    width: (i['la_anh_bia'] as bool) ? 1.5 : 1.0,
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  RoomPhoto(i['duong_dan'] as String),
-                  SwitchListTile(
-                    activeThumbColor: const Color(0xFFB58A45),
-                    title: const Text(
-                      'Ảnh bìa',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF152536),
+                child: Column(
+                  children: [
+                    RoomPhoto(i['duong_dan'] as String),
+                    SwitchListTile(
+                      activeThumbColor: const Color(0xFFB58A45),
+                      title: const Text(
+                        'Ảnh bìa',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF152536),
+                        ),
                       ),
-                    ),
-                    value: i['la_anh_bia'] as bool,
-                    onChanged: busy
-                        ? null
-                        : (v) => mutate((api) async {
+                      value: i['la_anh_bia'] as bool,
+                      onChanged: busy
+                          ? null
+                          : (v) => mutate((api) async {
                               await api.request(
                                 'PATCH',
                                 '/staff/images/${i['ma_anh']}',
                                 body: {'la_anh_bia': v},
                               );
                             }),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
                     ),
-                    color: const Color(0xFFF5F7FA),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Thứ tự: ${i['thu_tu']}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF5C6875),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      color: const Color(0xFFF5F7FA),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Thứ tự: ${i['thu_tu']}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF5C6875),
+                            ),
                           ),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              tooltip: 'Đưa lên trước',
-                              onPressed: busy || (i['thu_tu'] as int) == 0
-                                  ? null
-                                  : () => mutate((api) async {
+                          Row(
+                            children: [
+                              IconButton(
+                                tooltip: 'Đưa lên trước',
+                                onPressed: busy || (i['thu_tu'] as int) == 0
+                                    ? null
+                                    : () => mutate((api) async {
                                         await api.request(
                                           'PATCH',
                                           '/staff/images/${i['ma_anh']}',
@@ -356,13 +351,13 @@ class _RoomImagesScreenState extends State<RoomImagesScreen> {
                                           },
                                         );
                                       }),
-                              icon: const Icon(Icons.arrow_upward),
-                            ),
-                            IconButton(
-                              tooltip: 'Đưa xuống sau',
-                              onPressed: busy
-                                  ? null
-                                  : () => mutate((api) async {
+                                icon: const Icon(Icons.arrow_upward),
+                              ),
+                              IconButton(
+                                tooltip: 'Đưa xuống sau',
+                                onPressed: busy
+                                    ? null
+                                    : () => mutate((api) async {
                                         await api.request(
                                           'PATCH',
                                           '/staff/images/${i['ma_anh']}',
@@ -371,62 +366,65 @@ class _RoomImagesScreenState extends State<RoomImagesScreen> {
                                           },
                                         );
                                       }),
-                              icon: const Icon(Icons.arrow_downward),
-                            ),
-                            IconButton(
-                              tooltip: 'Xóa ảnh',
-                              color: const Color(0xFFB42318),
-                              onPressed: busy
-                                  ? null
-                                  : () async {
-                                      final yes = await showDialog<bool>(
-                                        context: context,
-                                        builder: (c) => AlertDialog(
-                                          backgroundColor: Colors.white,
-                                          surfaceTintColor: Colors.transparent,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(20),
-                                          ),
-                                          title: const Text('Xóa ảnh này?'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(c, false),
-                                              child: const Text('Giữ lại'),
+                                icon: const Icon(Icons.arrow_downward),
+                              ),
+                              IconButton(
+                                tooltip: 'Xóa ảnh',
+                                color: const Color(0xFFB42318),
+                                onPressed: busy
+                                    ? null
+                                    : () async {
+                                        final yes = await showDialog<bool>(
+                                          context: context,
+                                          builder: (c) => AlertDialog(
+                                            backgroundColor: Colors.white,
+                                            surfaceTintColor:
+                                                Colors.transparent,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
                                             ),
-                                            FilledButton(
-                                              style: FilledButton.styleFrom(
-                                                backgroundColor:
-                                                    const Color(0xFFB42318),
+                                            title: const Text('Xóa ảnh này?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(c, false),
+                                                child: const Text('Giữ lại'),
                                               ),
-                                              onPressed: () =>
-                                                  Navigator.pop(c, true),
-                                              child: const Text('Xóa'),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                      if (yes == true && mounted) {
-                                        await mutate((api) async {
-                                          await api.request(
-                                            'DELETE',
-                                            '/staff/images/${i['ma_anh']}',
-                                          );
-                                        });
-                                      }
-                                    },
-                              icon: const Icon(Icons.delete_outline),
-                            ),
-                          ],
-                        ),
-                      ],
+                                              FilledButton(
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor: const Color(
+                                                    0xFFB42318,
+                                                  ),
+                                                ),
+                                                onPressed: () =>
+                                                    Navigator.pop(c, true),
+                                                child: const Text('Xóa'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (yes == true && mounted) {
+                                          await mutate((api) async {
+                                            await api.request(
+                                              'DELETE',
+                                              '/staff/images/${i['ma_anh']}',
+                                            );
+                                          });
+                                        }
+                                      },
+                                icon: const Icon(Icons.delete_outline),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

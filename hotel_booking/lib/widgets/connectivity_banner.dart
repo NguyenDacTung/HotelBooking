@@ -39,14 +39,17 @@ class _ConnectivityBannerState extends State<ConnectivityBanner> {
               fontWeight: FontWeight.w600,
             ),
             content: const Text(
-              'Không phát hiện Wi-Fi/di động. Nếu dùng USB, hãy kiểm tra chuyển tiếp cổng. TTTP vẫn kiểm tra từng yêu cầu tới máy chủ.',
+              'Không phát hiện Wi-Fi/di động. Nếu dùng USB, hãy kiểm tra chuyển tiếp cổng. TETRA vẫn kiểm tra từng yêu cầu tới máy chủ.',
             ),
             leading: const Icon(Icons.wifi_off, color: Colors.white),
             actions: [
               TextButton(
                 style: TextButton.styleFrom(foregroundColor: Colors.white),
                 onPressed: () => setState(() => offline = false),
-                child: const Text('Đóng', style: TextStyle(fontWeight: FontWeight.w700)),
+                child: const Text(
+                  'Đóng',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           )

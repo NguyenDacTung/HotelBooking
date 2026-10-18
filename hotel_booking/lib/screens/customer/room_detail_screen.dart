@@ -1,3 +1,5 @@
+import '../shared/reviews_screen.dart';
+
 import 'package:easy_image_viewer/easy_image_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -64,6 +66,18 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
+        actions: [
+          IconButton(
+            tooltip: 'Đánh giá phòng',
+            icon: const Icon(Icons.star_outline),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => ReviewsScreen(roomId: room.id),
+              ),
+            ),
+          ),
+        ],
         centerTitle: true,
         elevation: 0,
         backgroundColor: const Color(0xFF123A52),
@@ -257,6 +271,20 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF123A52),
                     fontSize: 22,
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => ReviewsScreen(roomId: room.id),
+                    ),
+                  ),
+                  icon: const Icon(Icons.star_outline),
+                  label: Text(
+                    (room.rating['so_danh_gia'] ?? 0) == 0
+                        ? 'Chưa có đánh giá • Xem đánh giá'
+                        : '${room.rating['diem_trung_binh']}/5 • ${room.rating['so_danh_gia']} đánh giá',
                   ),
                 ),
                 const SizedBox(height: 8),

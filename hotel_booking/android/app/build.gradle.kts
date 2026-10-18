@@ -27,6 +27,17 @@ android {
         resValue("string", "facebook_app_id", facebookAppId)
         resValue("string", "facebook_client_token", providers.environmentVariable("TTTP_FACEBOOK_CLIENT_TOKEN").orElse("").get())
         resValue("string", "fb_login_protocol_scheme", "fb$facebookAppId")
+        // Public Firebase settings also initialize Android's background receiver.
+        val firebasePublic = mapOf(
+            "google_app_id" to "TTTP_FIREBASE_APP_ID",
+            "google_api_key" to "TTTP_FIREBASE_API_KEY",
+            "gcm_defaultSenderId" to "TTTP_FIREBASE_MESSAGING_SENDER_ID",
+            "project_id" to "TTTP_FIREBASE_PROJECT_ID"
+        ).mapValues { providers.environmentVariable(it.value).orElse("").get() }
+        if (firebasePublic.values.any { it.isNotEmpty() }) {
+            require(firebasePublic.values.all { it.isNotEmpty() }) { "Provide all four TTTP_FIREBASE public settings." }
+            firebasePublic.forEach { (resource, value) -> resValue("string", resource, value) }
+        }
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
@@ -50,6 +61,7 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    implementation("androidx.biometric:biometric:1.1.0")
 }
 
 kotlin {

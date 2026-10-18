@@ -110,15 +110,13 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
       builder: (c) => AlertDialog(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           changeRole
               ? 'Đổi vai trò thành ${TttpStrings.roleNames[next]}?'
               : account!['dang_hoat_dong'] == true
-                  ? 'Khóa tài khoản?'
-                  : 'Mở khóa tài khoản?',
+              ? 'Khóa tài khoản?'
+              : 'Mở khóa tài khoản?',
           style: const TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFF152536),
@@ -130,9 +128,8 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           child: TextFormField(
             controller: reason,
             maxLength: 2000,
-            validator: requiredText,
             decoration: InputDecoration(
-              labelText: 'Lý do',
+              labelText: 'Lý do (tùy chọn)',
               filled: true,
               fillColor: const Color(0xFFF5F7FA),
               border: OutlineInputBorder(
@@ -196,10 +193,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: Text(
           widget.id == null ? 'Tạo tài khoản nội bộ' : 'Chi tiết tài khoản',
-          style: const TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: Form(
@@ -270,8 +264,8 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                       obscureText: true,
                       validator: (v) =>
                           v != null && v.length >= 8 && v.length <= 128
-                              ? null
-                              : 'Mật khẩu từ 8 đến 128 ký tự',
+                          ? null
+                          : 'Mật khẩu từ 8 đến 128 ký tự',
                       decoration: InputDecoration(
                         labelText: 'Mật khẩu ban đầu',
                         prefixIcon: const Icon(Icons.vpn_key_outlined),
@@ -341,8 +335,8 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color:
-                                const Color(0xFFB58A45).withValues(alpha: 0.2),
+                            color: const Color(0xFFB58A45)
+                                .withValues(alpha: 0.2),
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: const Color(0xFFB58A45)
@@ -524,10 +518,11 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                             ? const Color(0xFFB42318)
                             : const Color(0xFF237A57),
                         side: BorderSide(
-                          color: (isActive
-                                  ? const Color(0xFFB42318)
-                                  : const Color(0xFF237A57))
-                              .withValues(alpha: 0.5),
+                          color:
+                              (isActive
+                                      ? const Color(0xFFB42318)
+                                      : const Color(0xFF237A57))
+                                  .withValues(alpha: 0.5),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
@@ -573,9 +568,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
               Text(
                 'Lịch sử quản trị',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF123A52),
-                    ),
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF123A52),
+                ),
               ),
               const SizedBox(height: 12),
               ...(account!['lich_su'] as List? ?? []).map(

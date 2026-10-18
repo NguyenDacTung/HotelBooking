@@ -132,10 +132,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
         systemOverlayStyle: SystemUiOverlayStyle.light,
         title: const Text(
           'Xác nhận đặt phòng',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
         ),
       ),
       body: Form(
@@ -178,9 +175,9 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                   Text(
                     '${widget.room.type} • Phòng ${widget.room.number}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF123A52),
-                        ),
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF123A52),
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -206,7 +203,11 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                             final now = DateTime.now().toUtc().add(
                               const Duration(hours: 7),
                             );
-                            final first = DateTime(now.year, now.month, now.day);
+                            final first = DateTime(
+                              now.year,
+                              now.month,
+                              now.day,
+                            );
                             final range = await showDateRangePicker(
                               context: context,
                               firstDate: first,
@@ -274,6 +275,18 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
               ),
             ],
             if (quote != null) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Nhận phòng từ ${(quote!['chinh_sach'] as Map?)?['checkin_hour'] ?? 14}:00; trả phòng trước ${(quote!['chinh_sach'] as Map?)?['checkout_hour'] ?? 12}:00 (giờ Việt Nam). '
+                    'Nhận sớm trước 06:00: 100%, trước giờ nhận: 50% giá một đêm. Trả muộn đến 15:00: 30%, đến 18:00: 50%, sau 18:00: 100%; quá ngày tính thêm đêm. '
+                    'Giường phụ: ${money((quote!['chinh_sach'] as Map?)?['extra_bed_price'] as num? ?? 250000)}/đêm, tối đa một giường, cần xác nhận với lễ tân. '
+                    'Đơn chờ xác nhận giữ chỗ tối đa ${(quote!['chinh_sach'] as Map?)?['hold_hours'] ?? 24} giờ, không quá cuối ngày đến. Hủy đơn đã xác nhận trong 24 giờ trước giờ nhận hoặc khách không đến: phí một đêm. '
+                    'Minibar, giặt là và khoản phát sinh được đối chiếu theo sử dụng thực tế.',
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -297,7 +310,8 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                     const SizedBox(height: 4),
                     Text(
                       'Dự kiến: ${money(quote!['tong_tien'] as num)}',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF123A52),
                             fontSize: 20,
@@ -329,10 +343,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
               padding: EdgeInsets.symmetric(vertical: 14),
               child: Text(
                 'Có thể hủy trước 00:00 ngày nhận phòng, theo giờ Việt Nam.',
-                style: TextStyle(
-                  color: Color(0xFF5C6875),
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: Color(0xFF5C6875), fontSize: 13),
               ),
             ),
             Container(
@@ -384,7 +395,7 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                   TextFormField(
                     controller: phone,
                     maxLength: 20,
-                    validator: requiredText,
+                    validator: phoneText,
                     keyboardType: TextInputType.phone,
                     decoration: InputDecoration(
                       labelText: 'Điện thoại liên hệ',
@@ -443,8 +454,8 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
                 ),
                 onPressed:
                     busy || quoting || uncertain || quote?['kha_dung'] != true
-                        ? null
-                        : submit,
+                    ? null
+                    : submit,
                 child: Text(
                   busy ? 'Đang gửi…' : 'Xác nhận đặt phòng',
                   style: const TextStyle(

@@ -20,18 +20,21 @@ def development_fingerprint():
     with engine().connect() as conn:
         if conn.scalar(text('SELECT current_database()')) != 'hotel_booking':
             raise SystemExit('Development database guard failed')
-        for table in Base.metadata.sorted_tables:
+        from sqlalchemy import inspect
+        for name in inspect(conn).get_table_names(schema='public'):
             # Only fixed ORM table identifiers; compare data without displaying it.
             row = conn.execute(text(f'''SELECT count(*), md5(coalesce(string_agg(h, '' ORDER BY h), ''))
-                FROM (SELECT md5(to_jsonb(t)::text) h FROM public.{table.name} t) hashes''')).one()
-            result[table.name] = tuple(row)
+                FROM (SELECT md5(to_jsonb(t)::text) h FROM public."{name}" t) hashes''')).one()
+            result[name] = tuple(row)
     return result
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('command', choices=['prepare', 'test-postgres'])
+    parser.add_argument('--only',help='Optional pytest selector under tests/, still guarded to hotel_booking_test')
     args = parser.parse_args()
+    if args.only and (not args.only.startswith('tests/') or '..' in args.only):parser.error('--only must select a test under tests/')
     config = settings()
     url = make_url(config.database_url)
     if url.database != 'hotel_booking':
@@ -68,7 +71,7 @@ def main():
         base = Path('.test-runs').resolve() / uuid4().hex
         base.parent.mkdir(parents=True, exist_ok=True)
         result = subprocess.run([sys.executable, '-m', 'pytest', '-q', '-p', 'no:cacheprovider',
-                                 '--basetemp', str(base), '--tb=short'], env=env)
+                                 '--basetemp', str(base), '--tb=short', *([args.only] if args.only else [])], env=env)
         if development_fingerprint() != before:
             raise SystemExit('Development database changed during test run; investigate before continuing.')
         print('Verified: hotel_booking data unchanged across test run.', flush=True)

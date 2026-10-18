@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from sqlalchemy import URL
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -21,6 +21,30 @@ class Settings(BaseSettings):
     facebook_app_secret: str = ''
     facebook_graph_version: str = 'v24.0'
     report_font_path: Path = Path('C:/Windows/Fonts/arial.ttf')
+    checkin_hour: int = Field(14, ge=6, le=23)
+    checkout_hour: int = Field(12, ge=0, le=14)
+    hold_hours: int = Field(24, ge=1, le=168)
+    extra_bed_price: int = Field(250000, ge=0, le=100000000)
+    smtp_host: str = ''
+    smtp_port: int = 587
+    smtp_user: str = ''
+    smtp_password: str = ''
+    smtp_from: str = ''
+    smtp_starttls: bool = True
+    firebase_project_id: str = ''
+    firebase_credentials: str = ''
+    private_upload_dir: Path = Path('private_uploads')
+    payment_environment: str = 'sandbox'
+    payment_public_base_url: str = ''
+    momo_partner_code: str = ''
+    momo_access_key: str = ''
+    momo_secret_key: str = ''
+    momo_endpoint: str = 'https://test-payment.momo.vn/v2/gateway/api'
+    vnpay_tmn_code: str = ''
+    vnpay_hash_secret: str = ''
+    vnpay_payment_url: str = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'
+    vnpay_query_url: str = 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction'
+    persistent_media_enabled: bool = True
 
     @field_validator('database_url')
     @classmethod

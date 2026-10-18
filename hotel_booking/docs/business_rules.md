@@ -1,26 +1,53 @@
-# Quy tắc triển khai
+﻿# Quy tắc nghiệp vụ TTTP — cập nhật 18/10/2026
 
-## Phòng đề xuất và trạng thái sử dụng — cập nhật 17/10/2026
+Yêu cầu nâng cấp trực tiếp của người dùng thay thế các giới hạn cũ trong đặc tả gốc. PostgreSQL được giữ nguyên; không reset hotel_booking. Kiểm thử cạnh tranh và giao dịch thử dùng riêng hotel_booking_test.
 
-- Trang chủ công khai gọi `GET /rooms/recommended`, tối đa 6 phòng, hiển thị lưới 2 cột cho khách vãng lai và khách đăng nhập. Khi mất mạng hoặc API lỗi, ẩn danh sách; tự tải lại khi mở lại app, kết nối trở lại và định kỳ 45 giây khi app hoạt động.
-- `trang_thai_su_dung` được tính từ phiếu: phòng có phiếu `CHO_XAC_NHAN` hoặc `DA_XAC_NHAN` với ngày trả sau ngày hiện tại (giờ Việt Nam) là `DANG_SU_DUNG`, kể cả phiếu đặt trước trong tương lai. Phòng này không vào danh sách đề xuất. Phiếu đã hủy, từ chối hoặc đã đến ngày trả không còn giữ trạng thái này.
-- Chưa có thao tác trả phòng sớm/check-out riêng; hiện ngày trả trong phiếu là mốc kết thúc giữ phòng. Không sửa dữ liệu trạng thái vệ sinh/vận hành của phòng để lưu trạng thái sử dụng.
-- Đề xuất còn lọc phòng/loại đang kinh doanh, sức chứa và lịch tạm ngừng theo ngày tìm. Tìm phòng thông thường vẫn xét giao lịch của khoảng ngày được chọn; một phòng đã đặt vào ngày khác vẫn có thể được tìm thấy ở khoảng ngày không trùng.
-- Không cần migration hay thay đổi dữ liệu hiện có cho phần nâng cấp này.
+## Đặt phòng và lưu trú
 
-Đặc tả gốc: [DAC_TA_CODEX_HOTEL_BOOKING.md](DAC_TA_CODEX_HOTEL_BOOKING.md).
-Yêu cầu trực tiếp của người dùng được ưu tiên; nội dung tài liệu tham khảo không tự cấp quyền cài dịch vụ, xóa dữ liệu hoặc triển khai công khai.
+- Mỗi phiếu giữ một phòng vật lý, khoảng [ngày nhận, ngày trả), 1–30 đêm, ngày theo Việt Nam. Ngay ngày nhận vẫn được xác nhận/từ chối/hủy trước khi nhận phòng.
+- CHO_XAC_NHAN → DA_XAC_NHAN → DANG_O → CHO_THANH_TOAN → DA_HOAN_TAT. Nhánh kết thúc khác: DA_HUY, DA_TU_CHOI, HET_HAN, KHONG_DEN.
+- Bốn trạng thái đầu giữ lịch. Khóa hàng phòng trước phiếu, kết hợp PostgreSQL exclusion constraint chống giao lịch. Đổi phòng khóa hai phòng theo ID tăng dần.
+- Lễ tân tạo đơn hộ khách bằng email/tên/điện thoại, đổi phòng/ngày trước nhận và hủy hộ có lý do. Email mới có hồ sơ chưa có mật khẩu; khách đặt mật khẩu qua email khôi phục khi SMTP hoạt động. Không cấp mật khẩu mặc định.
+- Đổi phòng/ngày hiển thị giá mới, kiểm tra giá dự kiến, tính lại giá và ghi audit. Phiếu có giao dịch thu/hoàn không được đổi trực tiếp: cần đối chiếu/hoàn và tạo đơn thay thế để giữ sổ tiền.
+- Nhận phòng chỉ đúng ngày đến, sau xác nhận; phòng phải sẵn sàng và khách trước đã trả. Phiếu đã nhận không được hủy theo luồng hủy đặt chỗ.
+- Khách/nhân viên yêu cầu trả phòng để lập hóa đơn. Nhân viên thu/hoàn theo tiền thực tế rồi hoàn tất trả. Phụ thu tính lại theo lúc bàn giao; còn khoản cần thu/hoàn thì chặn hoàn tất, giữ hóa đơn mới để đối chiếu.
+- Trả thành công lưu thời điểm thực tế, kết thúc phiếu và chuyển phòng sang CAN_DON_DEP. Không chuyển phòng đang có khách sang dọn/bảo trì. Vệ sinh theo CAN_DON_DEP → DANG_DON_DEP → SAN_SANG.
 
-- Mỗi phiếu giữ đúng một phòng vật lý. Khoảng lưu trú `[ngày nhận, ngày trả)`, 1–30 đêm; ngày được kiểm tra theo Asia/Ho_Chi_Minh ở server. Ngày trả của phiếu trước được dùng làm ngày nhận của phiếu sau.
-- `CHO_XAC_NHAN`, `DA_XAC_NHAN` giữ phòng. Hủy/từ chối giải phóng lịch. Không có tác vụ hết hạn tự động.
-- Khách sở hữu được hủy phiếu đang giữ phòng trước 00:00 ngày nhận. Nhân viên chỉ xác nhận/từ chối phiếu chờ trước hạn này; từ chối cần lý do không trắng.
-- Server chốt giá Decimal từ loại phòng và lưu liên hệ tại thời điểm đặt. Không sửa phòng/ngày/giá phiếu cũ qua API.
-- Thao tác đặt, thay đổi trạng thái và thay đổi kỳ ngừng khóa hàng phòng trước; thay đổi trạng thái khóa tiếp phiếu. Đặt phòng đọc loại bằng FOR SHARE. Sửa loại khóa loại và không lấy khóa phòng sau đó.
-- Kiểm tra giao lịch giữa phiếu và kỳ ngừng trong transaction, cùng thứ tự khóa phòng. Exclusion constraint riêng cho hai bảng là lớp bảo vệ bổ sung.
-- Giảm sức chứa không được làm phiếu giữ chỗ chưa hết lưu trú vượt sức chứa. Không đổi loại của phòng có phiếu giữ chỗ chưa hết lưu trú. Ẩn phòng/loại chỉ chặn đặt mới.
-- Lịch sử và phiếu cùng commit. Email chuẩn hóa; Argon2; JWT HS256; quyền và tài khoản/hồ sơ được đọc ở backend. Khách đọc/hủy phiếu người khác nhận 404.
-- Deferred constraint trigger kiểm tra đúng một hồ sơ khớp loại tài khoản ở cuối transaction trên cả ba bảng tài khoản/hồ sơ.
-- Upload kiểm tra nội dung JPEG/PNG/WebP, tối đa 5 MiB, tên UUID; đường dẫn ảnh tương đối. Ảnh seed là placeholder tự tạo.
-- Không có SQLite, thanh toán, check-in/out, đa khách sạn, realtime hay đăng ký nhân viên công khai.
+## Chính sách phụ thu TTTP
 
-Các quy tắc có mã triển khai và test chuẩn bị; tính đúng của khóa, exclusion và trigger còn phải chạy trên PostgreSQL thật. Không dùng unit test thay bằng chứng cạnh tranh.
+Đây là chính sách của ứng dụng, tham khảo vận hành khách sạn; không phải mức phí chung bắt buộc. Khách xem trước đặt. Giá và chính sách được chốt vào từng phiếu mới, không đổi theo cấu hình về sau.
+
+| Trường hợp | Mức mặc định |
+| --- | --- |
+| Nhận từ 14:00, trả đến 12:00 | Giá phòng đã chốt |
+| Nhận trước 06:00 / từ 06:00 đến trước 14:00 | 100% / 50% giá một đêm |
+| Trả sau 12:00 đến 15:00 / sau 15:00 đến 18:00 / sau 18:00 | 30% / 50% / 100% giá một đêm |
+| Trả quá ngày dự kiến | Thêm 100% mỗi ngày quá hạn, cộng phần theo giờ ngày bàn giao |
+| Giường phụ | Gợi ý 250.000đ/đêm, tối đa một giường/phiếu; lễ tân xác nhận khả năng kê và tổng phí trước ghi nhận |
+| Minibar, giặt là, hư hỏng, khác | Ghi phát sinh thực tế, căn cứ/nội dung, đơn giá và số lượng |
+| Hủy đơn chờ / hủy đơn xác nhận cách giờ nhận từ 24 giờ | Không phí |
+| Hủy xác nhận dưới 24 giờ / không đến | Một đêm, không vượt tổng tiền phòng |
+
+Mốc giờ theo Asia/Ho_Chi_Minh. Đúng 12:00 chưa có phụ thu; đúng 15:00 là 30%, đúng 18:00 là 50%. Phụ thu tự động có mã cố định theo phiếu/loại, gọi lại không cộng trùng. Quản lý hủy phụ thu trước hoàn tất phải nhập lý do, giữ lịch sử thay vì xóa.
+
+Không bắt buộc cọc; có thể ghi thu một phần trên phiếu xác nhận. Tiền thu trừ hoàn đối chiếu với tiền phòng + phụ thu chưa hủy. Hủy không xóa giao dịch, không tự chuyển tiền ngân hàng. Quản lý chỉ ghi hoàn sau khi đã hoàn tiền thực tế.
+
+Phiếu mới chờ giữ tối đa 24 giờ, không quá cuối ngày đến. Worker giải phóng mỗi 60 giây; thao tác xác nhận/hủy kiểm tra hạn ngay lúc xử lý. No-show do nhân viên đánh dấu sau ngày đến, có lý do. Phiếu cũ trước migration không tự hết hạn, không bị tính phụ thu tự động hồi tố; giá/liên hệ/sổ tiền giữ nguyên.
+
+Tham khảo: [Vinpearl – quy định đặt phòng](https://vinpearl.com/en/reservations-regulations), [điều khoản](https://vinpearl.com/en/terms-of-use). Khung 14:00/12:00 và mức tiền TTTP là lựa chọn triển khai, không khẳng định mọi khách sạn dùng giống nhau.
+
+## Phòng, ảnh và đề xuất
+
+- DANG_O/CHO_THANH_TOAN là DANG_SU_DUNG, kể cả quá ngày trả dự kiến. Phiếu giữ tương lai là DA_DAT_TRUOC. Tách khỏi vệ sinh/vận hành.
+- Đề xuất không chứa cả hai nhóm; còn lọc kinh doanh/sức chứa/lịch ngừng. Tìm thông thường xét giao ngày; nhận thực tế vẫn phải chờ khách trước trả và dọn phòng.
+- Ảnh thuộc anh_phong.ma_phong, loại không có ảnh; tiện nghi theo loại. Thêm phòng: lưu rồi chọn ảnh ngay trong luồng; sửa phòng có nút quản lý ảnh. JPEG/PNG/WebP ≤5 MiB, một bìa/phòng, khóa phòng khi đổi bìa.
+- Migration giữ bảng ảnh cũ ở anh_loai_phong_legacy, chép liên kết cho từng phòng. Seed thay ảnh lưu metadata anh_phong_archive, giữ file cũ; chạy lại không nhân bản danh mục/ảnh.
+- Loại mới: Standard Single/Double/Twin, Superior Double/Twin, Deluxe King/Twin, Family Quad, Junior/Executive Suite; không đổi loại các phòng cũ. Giá TTTP tự thiết lập.
+- Ảnh chụp thật có nguồn/giấy phép trong assets.md; không dùng AI và không khẳng định là ảnh một cơ sở TTTP đã khảo sát. Không đưa giải thích kỹ thuật vào UI khách.
+
+## Tài khoản, tiền và dịch vụ ngoài
+
+- Argon2; JWT có hạn/phiên bản thu hồi; kiểm tra vai trò/quyền sở hữu mỗi request. Khách xem/sửa phiếu khác nhận 404.
+- Điện thoại kiểm tra cả Flutter/backend. Email chuẩn hóa, mật khẩu không tự cắt khoảng trắng. Login tối đa 8 lần/email và 60 lần/IP/15 phút; thành công xóa đếm email.
+- Thu/hoàn dùng UUID chống trùng và kiểm tra số dư dưới khóa. App lưu nguyên yêu cầu chưa rõ kết quả theo tài khoản/phiếu để thử lại khi mở lại, không tạo mã mới sau timeout/JSON lỗi. Khi tải hóa đơn lỗi, tổng cũ bị vô hiệu hóa.
+- Khôi phục/OAuth/push chỉ chạy khi cấu hình hợp lệ. Thanh toán online chưa có gateway: nút bị vô hiệu hóa, không ghi thu giả. Xem service_configuration.md.

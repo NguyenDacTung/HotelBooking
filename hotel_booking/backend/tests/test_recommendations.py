@@ -29,7 +29,7 @@ def test_recommendations_exclude_unreturned_active_bookings(setup,state,offset,o
         assert response.status_code==200,response.text
         assert response.json()['total']==(0 if occupied else 1)
         detail=client.get(f'/rooms/{setup["room"]}').json()
-        assert detail['trang_thai_su_dung']==('DANG_SU_DUNG' if occupied else 'CON_TRONG')
+        assert detail['trang_thai_su_dung']==('DA_DAT_TRUOC' if occupied else 'CON_TRONG')
         # Recommendation policy does not remove date-based future booking options.
         future=stay|{'ngay_nhan':str(today()+timedelta(days=20)),'ngay_tra':str(today()+timedelta(days=21))}
         assert client.get('/rooms/available',params=future).json()['total']==1

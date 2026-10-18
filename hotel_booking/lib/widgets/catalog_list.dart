@@ -155,6 +155,8 @@ class _CatalogListState extends State<CatalogList> {
                           : widget.section == 'rooms'
                           ? item['trang_thai_su_dung'] == 'DANG_SU_DUNG'
                                 ? 'Đang sử dụng'
+                                : item['trang_thai_su_dung'] == 'DA_DAT_TRUOC'
+                                ? 'Đã đặt trước'
                                 : 'Còn trống'
                           : 'Đang sử dụng',
                       style: const TextStyle(

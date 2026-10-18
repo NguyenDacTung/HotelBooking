@@ -23,4 +23,9 @@ const statuses = {
   'DA_XAC_NHAN': 'Đã xác nhận',
   'DA_HUY': 'Đã hủy',
   'DA_TU_CHOI': 'Đã từ chối',
+  'DANG_O': 'Đang lưu trú',
+  'CHO_THANH_TOAN': 'Chờ thanh toán / trả phòng',
+  'DA_HOAN_TAT': 'Đã trả phòng',
+  'HET_HAN': 'Hết hạn giữ chỗ',
+  'KHONG_DEN': 'Khách không đến',
 };

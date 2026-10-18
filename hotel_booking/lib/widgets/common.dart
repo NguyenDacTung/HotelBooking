@@ -19,7 +19,11 @@ class ErrorPanel extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Icon(Icons.error_outline_rounded, color: Color(0xFFB42318), size: 32),
+          const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFB42318),
+            size: 32,
+          ),
           const SizedBox(height: 8),
           Text(
             message,
@@ -39,7 +43,10 @@ class ErrorPanel extends StatelessWidget {
               ),
             ),
             onPressed: retry,
-            child: const Text('Thử lại', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Thử lại',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -72,15 +79,40 @@ class RoomPhoto extends StatelessWidget {
   }
 }
 
-void message(BuildContext context, Object text) =>
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$text'),
-        backgroundColor: const Color(0xFF123A52),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+void message(BuildContext context, Object text) => ScaffoldMessenger.of(context)
+  ..hideCurrentSnackBar()
+  ..showSnackBar(
+    SnackBar(
+      content: Text('$text'),
+      backgroundColor: const Color(0xFF123A52),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+  );
 
 String? requiredText(String? value) =>
     value == null || value.trim().isEmpty ? 'Vui lòng nhập thông tin' : null;
+
+/// Wait for the route to finish its dismissal animation before a caller
+/// disposes form controllers or replaces the booking widget underneath it.
+Future<T?> formDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool barrierDismissible = true,
+}) async {
+  final route = DialogRoute<T>(
+    context: context,
+    builder: builder,
+    barrierDismissible: barrierDismissible,
+  );
+  final result = await Navigator.of(context).push(route);
+  await route.completed;
+  return result;
+}
+
+String? phoneText(String? value) {
+  final v = (value ?? '').replaceAll(RegExp(r'[\s().-]'), '');
+  return RegExp(r'^(?:0[35789]\d{8}|\+[1-9]\d{7,14})$').hasMatch(v)
+      ? null
+      : 'Nhập số Việt Nam 10 chữ số hoặc số quốc tế có +';
+}

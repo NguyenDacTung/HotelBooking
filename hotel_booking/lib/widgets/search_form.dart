@@ -21,6 +21,7 @@ class _SearchFormState extends State<SearchForm> {
   late TextEditingController guests, min, max;
   List<Json> types = [];
   String? error;
+  String? syncedCriteria;
 
   @override
   void initState() {
@@ -30,6 +31,19 @@ class _SearchFormState extends State<SearchForm> {
     min = TextEditingController(text: s.minPrice?.toString() ?? '');
     max = TextEditingController(text: s.maxPrice?.toString() ?? '');
     if (widget.filters) loadTypes();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final s = context.watch<SearchProvider>();
+    final key = '${s.guests}:${s.minPrice}:${s.maxPrice}';
+    if (syncedCriteria != key) {
+      guests.text = '${s.guests}';
+      min.text = s.minPrice?.toString() ?? '';
+      max.text = s.maxPrice?.toString() ?? '';
+      syncedCriteria = key;
+    }
   }
 
   @override
@@ -66,9 +80,9 @@ class _SearchFormState extends State<SearchForm> {
           Text(
             'Bạn muốn nghỉ khi nào?',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF123A52),
-                ),
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF123A52),
+            ),
           ),
           const SizedBox(height: 14),
           OutlinedButton.icon(
@@ -80,11 +94,17 @@ class _SearchFormState extends State<SearchForm> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            icon: const Icon(Icons.date_range_outlined, color: Color(0xFFB58A45)),
+            icon: const Icon(
+              Icons.date_range_outlined,
+              color: Color(0xFFB58A45),
+            ),
             label: Text(
               'Nhận ${localDate(dateOnly(s.start))}  →  Trả ${localDate(dateOnly(s.end))}',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13.5,
+              ),
             ),
             onPressed: s.loading
                 ? null
@@ -258,6 +278,6 @@ class _SearchFormState extends State<SearchForm> {
 
   String? price(String? v) =>
       v == null || v.isEmpty || (int.tryParse(v) != null && int.parse(v) >= 0)
-          ? null
-          : 'Nhập số nguyên không âm';
+      ? null
+      : 'Nhập số nguyên không âm';
 }

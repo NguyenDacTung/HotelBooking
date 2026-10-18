@@ -26,6 +26,14 @@ class ReminderService {
     }
   }
 
+  static int stableId(String booking) {
+    var hash = 2166136261;
+    for (final v in booking.codeUnits) {
+      hash = ((hash ^ v) * 16777619) & 0x7fffffff;
+    }
+    return hash;
+  }
+
   Future<bool> requestPermission() async =>
       (await plugin
           .resolvePlatformSpecificImplementation<
@@ -37,27 +45,38 @@ class ReminderService {
     if (ready) await plugin.cancelAll();
   }
 
-  Future<void> sync(List<Json> bookings) async {
+  Future<void> sync(
+    List<Json> bookings, {
+    int hour = 18,
+    int minute = 0,
+  }) async {
     if (!ready) return;
     await plugin.cancelAll();
     final zone = tz.getLocation('Asia/Ho_Chi_Minh');
-    int id = 1;
+
     for (final b in bookings) {
       final day = DateTime.parse(b['ngay_nhan'] as String);
-      final when = tz.TZDateTime(
-        zone,
+      final before = DateTime(
         day.year,
         day.month,
         day.day,
-      ).subtract(const Duration(hours: 6));
+      ).subtract(const Duration(days: 1));
+      final when = tz.TZDateTime(
+        zone,
+        before.year,
+        before.month,
+        before.day,
+        hour,
+        minute,
+      );
       if (b['trang_thai'] != 'DA_XAC_NHAN' ||
           !when.isAfter(tz.TZDateTime.now(zone))) {
         continue;
       }
       await plugin.zonedSchedule(
-        id++,
-        'TTTP · Nhắc lịch nhận phòng',
-        'Bạn có lịch nhận phòng sắp tới. Mở TTTP để xem chi tiết.',
+        stableId(b['ma_pdp'] as String),
+        'TETRA · Nhắc lịch nhận phòng',
+        'Bạn có lịch nhận phòng sắp tới. Mở TETRA để xem chi tiết.',
         when,
         const NotificationDetails(
           android: AndroidNotificationDetails(

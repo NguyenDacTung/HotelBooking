@@ -8,19 +8,37 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.errors import handlers
 from app.api import auth, catalog, bookings, staff
-from app.api import upgrade, reports, social
+from app.api import upgrade, reports, social, stays, recovery, devices
+from app.api import reviews, integration, online_payments, biometric
 
 
 @asynccontextmanager
 async def lifespan(app):
     config = settings()  # Reject missing/placeholder secrets before serving requests.
     config.upload_dir.mkdir(parents=True, exist_ok=True)
-    yield
+    import asyncio,logging
+    from app.db.session import engine
+    from app.services.stays import expire_pending
+    from app.services.push import dispatch
+    async def maintain():
+        while True:
+            await asyncio.sleep(60)
+            def run():
+                with Session(engine()) as db:expire_pending(db)
+                with Session(engine()) as db:dispatch(db)
+            try: await asyncio.to_thread(run)
+            except Exception: logging.getLogger('tttp.worker').warning('Background maintenance unavailable; will retry. Details withheld.')
+    task=asyncio.create_task(maintain())
+    try:yield
+    finally:
+        task.cancel()
+        try:await task
+        except asyncio.CancelledError:pass
 
 
 app = FastAPI(title='Khách sạn • Đặt phòng', lifespan=lifespan)
 handlers(app)
-for router in (auth.router, catalog.router, bookings.router, staff.router, upgrade.router, reports.router, social.router):
+for router in (auth.router, catalog.router, bookings.router, staff.router, upgrade.router, reports.router, social.router,stays.router,recovery.router,devices.router,reviews.router,integration.router,online_payments.router,biometric.router):
     app.include_router(router)
 
 

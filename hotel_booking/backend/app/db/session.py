@@ -10,7 +10,7 @@ class Base(DeclarativeBase):
 
 @lru_cache
 def engine():
-    return create_engine(settings().database_url, pool_pre_ping=True,
+    return create_engine(settings().database_url, pool_pre_ping=True, hide_parameters=True,
                          isolation_level='READ COMMITTED')
 
 

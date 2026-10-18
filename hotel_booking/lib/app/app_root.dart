@@ -1,3 +1,10 @@
+import '../services/export_service.dart';
+import '../services/app_feedback.dart';
+import '../providers/capabilities_provider.dart';
+import '../widgets/app_drawer.dart';
+import '../services/biometric_login_service.dart';
+
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +27,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/shared/profile_screen.dart';
 import '../screens/shared/notifications_screen.dart';
 import '../screens/staff/booking_list_screen.dart';
+import '../screens/staff/front_desk_screen.dart';
 import '../screens/staff/room_status_screen.dart';
 import '../screens/admin/dashboard_screen.dart';
 import '../screens/admin/revenue_report_screen.dart';
@@ -29,70 +37,112 @@ import 'app_theme.dart';
 import 'app_router.dart';
 
 final hotelNavigatorKey = GlobalKey<NavigatorState>();
+String? _notificationOpening;
+DateTime? _notificationOpenedAt;
 Future<void> openNotificationBooking(String id) async {
-  final nav = hotelNavigatorKey.currentState;
-  if (nav == null) return;
-  final session = nav.context.read<SessionProvider>();
-  if (session.user == null) {
-    await nav.push(
-      MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
-    );
-    if (session.user == null) return;
+  if (!RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F-]{27}$').hasMatch(id)) return;
+  if (_notificationOpening == id &&
+      (_notificationOpenedAt == null ||
+          DateTime.now().difference(_notificationOpenedAt!).inSeconds < 3)) {
+    return;
   }
-  nav.push(
-    MaterialPageRoute<void>(builder: (_) => BookingDetailScreen(id: id)),
-  );
+  _notificationOpening = id;
+  _notificationOpenedAt = null;
+  try {
+    for (var attempt = 0; attempt < 150; attempt++) {
+      final nav = hotelNavigatorKey.currentState;
+      if (nav == null) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        continue;
+      }
+      final navContext = nav.context;
+      if (!navContext.mounted) return;
+      final session = navContext.read<SessionProvider>();
+      if (session.restoring) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        continue;
+      }
+      if (session.user == null) {
+        await nav.push(
+          MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+        );
+        if (session.user == null || !nav.mounted) return;
+      }
+      // Server checks current ownership/role, never trust payload or cached profile.
+      await nav.push(
+        MaterialPageRoute<void>(builder: (_) => BookingDetailScreen(id: id)),
+      );
+      return;
+    }
+  } finally {
+    _notificationOpenedAt = DateTime.now();
+  }
 }
 
 class HotelApp extends StatelessWidget {
   const HotelApp({super.key});
   @override
-  Widget build(BuildContext context) => MultiProvider(
-    providers: [
-      Provider(create: (_) => ApiService()),
-      Provider(create: (c) => HotelRepository(c.read<ApiService>())),
-      ChangeNotifierProvider(
-        create: (c) {
-          final api = c.read<ApiService>();
-          final session = SessionProvider(api, const TokenStorage());
-          api.onUnauthorized = () async {
-            await session.logout();
-            final nav = hotelNavigatorKey.currentState;
-            if (nav != null) {
-              nav.popUntil((r) => r.isFirst);
-              nav.push(
-                MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
-              );
-            }
-          };
-          if (!demoMode) session.restore();
-          return session;
-        },
-      ),
-      ChangeNotifierProvider(
-        create: (c) => SearchProvider(c.read<HotelRepository>()),
-      ),
-      ChangeNotifierProvider(
-        create: (c) => NotificationsProvider(
-          c.read<SessionProvider>(),
-          c.read<ApiService>(),
-          ReminderService(),
-          openNotificationBooking,
+  Widget build(BuildContext context) {
+    AppFeedback.configure();
+    return MultiProvider(
+      providers: [
+        Provider(create: (_) => ApiService()),
+        ChangeNotifierProvider(
+          create: (c) => CapabilitiesProvider(c.read<ApiService>()),
         ),
+        Provider(create: (c) => HotelRepository(c.read<ApiService>())),
+        ChangeNotifierProvider(
+          create: (c) {
+            final api = c.read<ApiService>();
+            final session = SessionProvider(
+              api,
+              const TokenStorage(),
+              clearPrivateFiles: ExportService.clear,
+              biometric: const BiometricLoginService(),
+            );
+            session.onSignedOut = () {
+              hotelNavigatorKey.currentState?.popUntil((r) => r.isFirst);
+            };
+            api.onUnauthorized = () async {
+              await session.logout();
+              final nav = hotelNavigatorKey.currentState;
+              if (nav != null) {
+                nav.popUntil((r) => r.isFirst);
+                nav.push(
+                  MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+                );
+              }
+            };
+            if (!demoMode) session.restore();
+            return session;
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (c) => SearchProvider(c.read<HotelRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (c) => NotificationsProvider(
+            c.read<SessionProvider>(),
+            c.read<ApiService>(),
+            ReminderService(),
+            openNotificationBooking,
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        navigatorKey: hotelNavigatorKey,
+        builder: EasyLoading.init(),
+        title: 'TETRA · Đặt phòng',
+        debugShowCheckedModeBanner: false,
+        locale: const Locale('vi'),
+        supportedLocales: const [Locale('vi')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        theme: TttpTheme.light,
+        routes: AppRouter.routes,
+        home: demoMode ? const DemoScreen() : const SessionShell(),
       ),
-    ],
-    child: MaterialApp(
-      navigatorKey: hotelNavigatorKey,
-      title: 'TTTP · Đặt phòng',
-      debugShowCheckedModeBanner: false,
-      locale: const Locale('vi'),
-      supportedLocales: const [Locale('vi')],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      theme: TttpTheme.light,
-      routes: AppRouter.routes,
-      home: demoMode ? const DemoScreen() : const SessionShell(),
-    ),
-  );
+    );
+  }
 }
 
 class SessionShell extends StatelessWidget {
@@ -131,6 +181,9 @@ class _HomeShellState extends State<HomeShell> {
     setState(() => index = value);
     final s = context.read<SessionProvider>();
     if (s.user != null) context.read<NotificationsProvider>().refresh();
+    if (s.manager && (value == 0 || value == 2)) {
+      context.read<AdminProvider>().load();
+    }
     if ((!s.staff && value == 2) ||
         (s.staff && !s.manager && value == 0) ||
         (s.manager && value == 1)) {
@@ -190,8 +243,19 @@ class _HomeShellState extends State<HomeShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(index == 0 && !s.staff ? 'Khách sạn TTTP' : labels[index]),
+        title: Text(index == 0 && !s.staff ? 'Khách sạn TETRA' : labels[index]),
         actions: [
+          if (s.staff)
+            IconButton(
+              tooltip: 'Đặt phòng hộ khách',
+              icon: const Icon(Icons.add_business),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute<void>(
+                  builder: (_) => const FrontDeskScreen(),
+                ),
+              ),
+            ),
           if (s.user != null)
             IconButton(
               tooltip: 'Thông báo',
@@ -209,57 +273,7 @@ class _HomeShellState extends State<HomeShell> {
             ),
         ],
       ),
-      drawer: s.manager
-          ? Drawer(
-              child: SafeArea(
-                child: ListView(
-                  children: [
-                    const DrawerHeader(
-                      child: Text(
-                        'TTTP\nQuản trị khách sạn',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    for (final entry in {
-                      '/admin/room-types': 'Loại phòng và ảnh',
-                      '/admin/rooms': 'Phòng',
-                      '/admin/amenities': 'Tiện nghi',
-                      '/admin/closures': 'Lịch tạm ngừng',
-                      '/admin/accounts': 'Quản lý tài khoản',
-                    }.entries)
-                      ListTile(
-                        title: Text(entry.value),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, entry.key);
-                        },
-                      ),
-                    ListTile(
-                      title: const Text('Tình trạng phòng'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => Scaffold(
-                              appBar: AppBar(
-                                title: const Text('Tình trạng phòng'),
-                              ),
-                              body: const RoomStatusScreen(),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : null,
+      drawer: const AppDrawer(),
       body: Column(
         children: [
           const ConnectivityBanner(),

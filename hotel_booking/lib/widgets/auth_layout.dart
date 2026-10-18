@@ -9,7 +9,9 @@ class AuthLayout extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Image.asset('assets/images/auth-hotel.jpg', fit: BoxFit.cover),
-        const ColoredBox(color: Color(0xCC123A52)), // Tăng độ sâu lớp phủ overlay một chút cho dễ nhìn
+        const ColoredBox(
+          color: Color(0xCC123A52),
+        ), // Tăng độ sâu lớp phủ overlay một chút cho dễ nhìn
         SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -19,7 +21,7 @@ class AuthLayout extends StatelessWidget {
                 child: Column(
                   children: [
                     const Text(
-                      'TTTP',
+                      'TETRA',
                       style: TextStyle(
                         fontSize: 42,
                         fontWeight: FontWeight.w800,

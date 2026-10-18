@@ -61,23 +61,12 @@ def seed(db, password):
         kind = db.scalar(select(RoomType).where(RoomType.ten_loai == name))
         if not kind:
             kind = RoomType(ten_loai=name, gia_co_ban=price, suc_chua=capacity,
-                mo_ta='Phòng minh họa cho đồ án, không phải khách sạn đã khảo sát.', dien_tich_m2=24 + index * 10, so_giuong=1 + index)
+                mo_ta='Phòng nghỉ có điều hòa, Wi-Fi, TV và phòng tắm riêng.', dien_tich_m2=24 + index * 10, so_giuong=1 + index)
             db.add(kind)
             db.flush()
         for amenity in amenities[:4 + index]:
             if not db.get(TypeAmenity, (kind.ma_lp, amenity.ma_tn)):
                 db.add(TypeAmenity(ma_lp=kind.ma_lp, ma_tn=amenity.ma_tn))
-        directory = settings().upload_dir
-        directory.mkdir(parents=True, exist_ok=True)
-        for image_index in range(2):
-            path = f'/uploads/demo-{name.lower()}-{image_index}.png'
-            if not db.scalar(select(RoomImage).where(RoomImage.duong_dan == path)):
-                image = Image.new('RGB', (800, 450), (30 + index * 20, 90, 100 + image_index * 30))
-                ImageDraw.Draw(image).text((60, 200), f'DEMO PLACEHOLDER - {name} {image_index + 1}', fill='white')
-                image.save(directory / Path(path).name)
-                has_cover = db.scalar(select(RoomImage.ma_anh).where(RoomImage.ma_lp == kind.ma_lp, RoomImage.la_anh_bia.is_(True)))
-                db.add(RoomImage(ma_lp=kind.ma_lp, duong_dan=path, la_anh_bia=image_index == 0 and not has_cover, thu_tu=image_index))
-                db.flush()
         for room_index in range(4):
             number = str((index + 1) * 100 + room_index + 1)
             room = db.scalar(select(Room).where(Room.so_phong == number))

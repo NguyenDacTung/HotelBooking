@@ -4,7 +4,7 @@ from pathlib import Path
 from uuid import uuid4
 from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, Response
 from PIL import Image, UnidentifiedImageError
-from sqlalchemy import select, delete, update
+from sqlalchemy import select, delete, update, text
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.core.security import manager
@@ -140,16 +140,17 @@ def patch_closure(key: int, data: ClosurePatch, user=Depends(manager), db: Sessi
 
 
 def cover(db, type_id, exclude=None):
-    query = update(RoomImage).where(RoomImage.ma_lp == type_id, RoomImage.la_anh_bia.is_(True))
+    query = update(RoomImage).where(RoomImage.ma_phong == type_id, RoomImage.la_anh_bia.is_(True))
     if exclude:
         query = query.where(RoomImage.ma_anh != exclude)
     db.execute(query.values(la_anh_bia=False))
     db.flush()
 
 
-@router.post('/room-types/{key}/images', status_code=201)
+@router.post('/rooms/{key}/images', status_code=201)
 def upload(key: int, file: UploadFile = File(), thu_tu: int = Form(0, ge=0, le=32767),
            la_anh_bia: bool = Form(False), db: Session = Depends(get_db)):
+    if not settings().persistent_media_enabled:fail(503,'MEDIA_NOT_CONFIGURED','Lưu ảnh chưa được cấu hình')
     raw = file.file.read(5 * 1024 * 1024 + 1)
     if len(raw) > 5 * 1024 * 1024:
         fail(422, 'VALIDATION_ERROR', 'Ảnh tối đa 5 MiB')
@@ -161,7 +162,7 @@ def upload(key: int, file: UploadFile = File(), thu_tu: int = Form(0, ge=0, le=3
             image.verify()
     except (UnidentifiedImageError, OSError, ValueError, Image.DecompressionBombError):
         fail(422, 'VALIDATION_ERROR', 'Cần ảnh JPEG, PNG hoặc WebP hợp lệ')
-    get_or_404(db, RoomType, key, True)
+    get_or_404(db, Room, key, True)
     if la_anh_bia:
         cover(db, key)
     directory = settings().upload_dir.resolve()
@@ -170,7 +171,7 @@ def upload(key: int, file: UploadFile = File(), thu_tu: int = Form(0, ge=0, le=3
     path = directory / name
     try:
         path.write_bytes(raw)
-        obj = RoomImage(ma_lp=key, duong_dan=f'/uploads/{name}', thu_tu=thu_tu, la_anh_bia=la_anh_bia)
+        obj = RoomImage(ma_phong=key, duong_dan=f'/uploads/{name}', thu_tu=thu_tu, la_anh_bia=la_anh_bia)
         db.add(obj)
         db.commit()
     except Exception:
@@ -183,10 +184,10 @@ def upload(key: int, file: UploadFile = File(), thu_tu: int = Form(0, ge=0, le=3
 @router.patch('/images/{key}')
 def patch_image(key: int, data: ImagePatch, db: Session = Depends(get_db)):
     initial = get_or_404(db, RoomImage, key)
-    get_or_404(db, RoomType, initial.ma_lp, True)
+    get_or_404(db, Room, initial.ma_phong, True)
     obj = get_or_404(db, RoomImage, key, True)
     if data.la_anh_bia:
-        cover(db, obj.ma_lp, key)
+        cover(db, obj.ma_phong, key)
     apply_values(obj, data)
     db.commit()
     return columns(obj)
@@ -195,7 +196,7 @@ def patch_image(key: int, data: ImagePatch, db: Session = Depends(get_db)):
 @router.delete('/images/{key}', status_code=204)
 def delete_image(key: int, db: Session = Depends(get_db)):
     initial = get_or_404(db, RoomImage, key)
-    get_or_404(db, RoomType, initial.ma_lp, True)
+    get_or_404(db, Room, initial.ma_phong, True)
     obj = get_or_404(db, RoomImage, key, True)
     directory = settings().upload_dir.resolve()
     name = obj.duong_dan.removeprefix('/uploads/')
@@ -205,7 +206,11 @@ def delete_image(key: int, db: Session = Depends(get_db)):
     # Keep DB record on filesystem errors so the operation can be retried.
     previous = path.read_bytes() if path.exists() else None
     try:
-        path.unlink(missing_ok=True)
+        shared = db.scalar(select(RoomImage.ma_anh).where(RoomImage.duong_dan==obj.duong_dan,RoomImage.ma_anh!=key).limit(1))
+        for archive in ('anh_loai_phong_legacy','anh_phong_archive'):
+            if db.scalar(text('SELECT to_regclass(:table)'),{'table':archive}):
+                shared = shared or db.scalar(text(f'SELECT EXISTS(SELECT 1 FROM {archive} WHERE duong_dan=:path)'),{'path':obj.duong_dan})
+        if not shared: path.unlink(missing_ok=True)
         db.delete(obj)
         db.commit()
     except Exception:

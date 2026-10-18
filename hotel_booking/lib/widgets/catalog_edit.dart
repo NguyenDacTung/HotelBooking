@@ -43,7 +43,7 @@ const fields = <String, List<FieldSpec>>{
     FieldSpec('ma_phong', 'Phòng', 'room'),
     FieldSpec('tu_ngay', 'Từ ngày', 'date'),
     FieldSpec('den_ngay', 'Đến ngày (không chiếm ngày này)', 'date'),
-    FieldSpec('ly_do', 'Lý do'),
+    FieldSpec('ly_do', 'Lý do (tùy chọn)', 'text', true),
   ],
 };
 const keys = {
@@ -144,13 +144,15 @@ class _CatalogEditState extends State<CatalogEdit> {
         continue;
       }
       final value = controllers[f.keyName]!.text.trim();
-      body[f.keyName] = value.isEmpty
+      body[f.keyName] = f.keyName == 'ly_do'
+          ? value
+          : value.isEmpty
           ? null
           : ['money', 'positive', 'integer', 'type', 'room'].contains(f.kind)
-              ? int.parse(value)
-              : f.kind == 'decimal'
-                  ? double.parse(value)
-                  : value;
+          ? int.parse(value)
+          : f.kind == 'decimal'
+          ? double.parse(value)
+          : value;
     }
     if (widget.section != 'amenities') {
       body[widget.section == 'room-closures'
@@ -169,14 +171,24 @@ class _CatalogEditState extends State<CatalogEdit> {
       error = null;
     });
     try {
-      await context.read<ApiService>().request(
+      final saved = await context.read<ApiService>().request(
         widget.item == null ? 'POST' : 'PATCH',
         '/staff/${widget.section}${widget.item == null ? '' : '/${widget.item![keys[widget.section]]}'}',
         body: body,
       );
       if (mounted) {
         message(context, 'Đã lưu');
-        Navigator.pop(context);
+        if (widget.section == 'rooms' && widget.item == null) {
+          await Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  RoomImagesScreen(roomId: (saved as Json)['ma_phong'] as int),
+            ),
+          );
+          if (!mounted) return;
+        }
+        if (mounted) Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) setState(() => error = '$e');
@@ -209,7 +221,8 @@ class _CatalogEditState extends State<CatalogEdit> {
                 padding: const EdgeInsets.only(bottom: 16),
                 child: ['type', 'room'].contains(f.kind)
                     ? DropdownButtonFormField<int>(
-                        initialValue: choices.any(
+                        initialValue:
+                            choices.any(
                               (e) =>
                                   '${e[f.kind == 'type' ? 'ma_lp' : 'ma_phong']}' ==
                                   controllers[f.keyName]!.text,
@@ -222,14 +235,17 @@ class _CatalogEditState extends State<CatalogEdit> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
                           ),
                         ),
                         items: choices
                             .map(
                               (e) => DropdownMenuItem(
-                                value: e[f.kind == 'type' ? 'ma_lp' : 'ma_phong']
-                                    as int,
+                                value:
+                                    e[f.kind == 'type' ? 'ma_lp' : 'ma_phong']
+                                        as int,
                                 child: Text(
                                   '${e[f.kind == 'type' ? 'ten_loai' : 'so_phong']}',
                                 ),
@@ -238,9 +254,10 @@ class _CatalogEditState extends State<CatalogEdit> {
                             .toList(),
                         validator: (v) =>
                             v == null && controllers[f.keyName]!.text.isEmpty
-                                ? 'Chọn ${f.label.toLowerCase()}'
-                                : null,
-                        onChanged: busy ||
+                            ? 'Chọn ${f.label.toLowerCase()}'
+                            : null,
+                        onChanged:
+                            busy ||
                                 (widget.item != null &&
                                     widget.section == 'room-closures')
                             ? null
@@ -256,18 +273,24 @@ class _CatalogEditState extends State<CatalogEdit> {
                           fillColor: Colors.white,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                            ),
                           ),
                           suffixIcon: f.kind == 'date'
-                              ? const Icon(Icons.calendar_today, color: Color(0xFF123A52))
+                              ? const Icon(
+                                  Icons.calendar_today,
+                                  color: Color(0xFF123A52),
+                                )
                               : null,
                         ),
-                        keyboardType: [
-                          'money',
-                          'positive',
-                          'integer',
-                          'decimal',
-                        ].contains(f.kind)
+                        keyboardType:
+                            [
+                              'money',
+                              'positive',
+                              'integer',
+                              'decimal',
+                            ].contains(f.kind)
                             ? const TextInputType.numberWithOptions(
                                 decimal: true,
                                 signed: true,
@@ -282,7 +305,8 @@ class _CatalogEditState extends State<CatalogEdit> {
                                   lastDate: DateTime.now().add(
                                     const Duration(days: 3650),
                                   ),
-                                  initialDate: DateTime.tryParse(
+                                  initialDate:
+                                      DateTime.tryParse(
                                         controllers[f.keyName]!.text,
                                       ) ??
                                       DateTime.now(),
@@ -344,11 +368,15 @@ class _CatalogEditState extends State<CatalogEdit> {
                 onPressed: busy ? null : save,
                 child: Text(
                   busy ? 'Đang lưu…' : 'Lưu',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),
-            if (widget.section == 'room-types' && widget.item != null) ...[
+            if (['room-types', 'rooms'].contains(widget.section) &&
+                widget.item != null) ...[
               const SizedBox(height: 12),
               SizedBox(
                 height: 50,
@@ -363,15 +391,22 @@ class _CatalogEditState extends State<CatalogEdit> {
                   onPressed: busy
                       ? null
                       : () => Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (_) => RoomImagesScreen(
-                                typeId: widget.item!['ma_lp'] as int,
-                              ),
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => RoomImagesScreen(
+                              typeId: widget.section == 'room-types'
+                                  ? widget.item!['ma_lp'] as int
+                                  : null,
+                              roomId: widget.section == 'rooms'
+                                  ? widget.item!['ma_phong'] as int
+                                  : null,
                             ),
                           ),
-                  child: const Text(
-                    'Quản lý tiện nghi và ảnh',
+                        ),
+                  child: Text(
+                    widget.section == 'rooms'
+                        ? 'Chọn / quản lý ảnh phòng'
+                        : 'Quản lý tiện nghi',
                     style: TextStyle(fontWeight: FontWeight.w700),
                   ),
                 ),

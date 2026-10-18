@@ -1,5 +1,6 @@
 from datetime import date
 from typing import Annotated
+import re
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator, AfterValidator
 from email_validator import validate_email, EmailNotValidError
 
@@ -14,7 +15,13 @@ def check_email(value):
 Email = Annotated[str, AfterValidator(check_email)]
 
 Name = Annotated[str, Field(min_length=1, max_length=120)]
-Phone = Annotated[str, Field(min_length=1, max_length=20)]
+def check_phone(value):
+    value = re.sub(r'[\s().-]', '', value)
+    if not re.fullmatch(r'(?:0[35789]\d{8}|\+[1-9]\d{7,14})', value):
+        raise ValueError('Nhập số điện thoại Việt Nam 10 chữ số hoặc số quốc tế bắt đầu bằng +')
+    return value
+
+Phone = Annotated[str, Field(min_length=1, max_length=20), AfterValidator(check_phone)]
 Money = Annotated[int, Field(ge=0, le=999999999999)]
 
 
@@ -67,7 +74,7 @@ class Reason(Input):
 
 
 class Reject(Input):
-    ly_do: str = Field(min_length=1, max_length=2000)
+    ly_do: str = Field(default='', max_length=2000)
 
 
 class TypeCreate(Input):
@@ -130,14 +137,14 @@ class ClosureCreate(Input):
     ma_phong: int = Field(gt=0)
     tu_ngay: date
     den_ngay: date
-    ly_do: str = Field(min_length=1, max_length=2000)
+    ly_do: str = Field(default='', max_length=2000)
     dang_hieu_luc: bool = True
 
 
 class ClosurePatch(Input):
     tu_ngay: date | None = None
     den_ngay: date | None = None
-    ly_do: str | None = Field(default=None, min_length=1, max_length=2000)
+    ly_do: str | None = Field(default=None, max_length=2000)
     dang_hieu_luc: bool | None = None
 
 

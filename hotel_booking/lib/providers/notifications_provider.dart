@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/reminder_service.dart';
+import '../services/push_service.dart';
 import 'session_provider.dart';
 
 class NotificationsProvider extends ChangeNotifier with WidgetsBindingObserver {
@@ -18,6 +19,30 @@ class NotificationsProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool loading = false, enabled = false, _disposed = false, _foreground = true;
   String? error, _account;
   Timer? _timer;
+  bool pushEnabled = false;
+  int reminderHour = 18, reminderMinute = 0;
+  Future<void> setReminderTime(int hour, int minute) async {
+    if (_account == null) return;
+    reminderHour = hour;
+    reminderMinute = minute;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('tetra_reminder_minutes_$_account', hour * 60 + minute);
+    await refresh();
+    _notify();
+  }
+
+  Future<void> setPushEnabled(bool value) async {
+    if (value) {
+      await PushService.instance.enable(api, onTap, refresh: () => refresh());
+    } else {
+      await PushService.instance.disable(api);
+    }
+    pushEnabled = value;
+    final prefs = await SharedPreferences.getInstance();
+    if (_account != null) await prefs.setBool('tttp_push_$_account', value);
+    _notify();
+  }
+
   NotificationsProvider(this.session, this.api, this.reminders, this.onTap) {
     WidgetsBinding.instance.addObserver(this);
     session.addListener(_sessionChanged);
@@ -45,6 +70,7 @@ class NotificationsProvider extends ChangeNotifier with WidgetsBindingObserver {
     items = [];
     unread = 0;
     enabled = false;
+    pushEnabled = false;
     loading = false;
     reminders.clear();
     if (account != null) {
@@ -60,6 +86,17 @@ class NotificationsProvider extends ChangeNotifier with WidgetsBindingObserver {
       final prefs = await SharedPreferences.getInstance();
       if (epoch != _epoch) return;
       enabled = prefs.getBool('tttp_reminders_$account') ?? false;
+      final minutes = prefs.getInt('tetra_reminder_minutes_$account') ?? 1080;
+      reminderHour = minutes ~/ 60;
+      reminderMinute = minutes % 60;
+      if (PushService.configured &&
+          (prefs.getBool('tttp_push_$account') ?? false)) {
+        try {
+          await setPushEnabled(true);
+        } catch (_) {
+          pushEnabled = false;
+        }
+      }
       await refresh();
     } catch (e) {
       if (epoch == _epoch) {
@@ -123,7 +160,11 @@ class NotificationsProvider extends ChangeNotifier with WidgetsBindingObserver {
           count = result['total'] as int;
         }
         if (epoch == _epoch) {
-          await reminders.sync(bookings);
+          await reminders.sync(
+            bookings,
+            hour: reminderHour,
+            minute: reminderMinute,
+          );
           if (epoch != _epoch) await reminders.clear();
         }
       }
@@ -142,7 +183,7 @@ class NotificationsProvider extends ChangeNotifier with WidgetsBindingObserver {
     if (value) {
       await reminders.initialize(onTap);
       if (!await reminders.requestPermission()) {
-        error = 'Quyền thông báo chưa được cấp. Bạn vẫn có thể dùng TTTP bình thường.';
+        error = 'Quyền thông báo chưa được cấp. Bạn vẫn có thể dùng TETRA bình thường.';
         _notify();
         return;
       }

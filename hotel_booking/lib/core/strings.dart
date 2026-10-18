@@ -1,10 +1,10 @@
 abstract final class TttpStrings {
-  static const brand = 'TTTP';
-  static const title = 'Khách sạn TTTP';
+  static const brand = 'TETRA';
+  static const title = 'Khách sạn TETRA';
   static const book = 'Xác nhận đặt phòng';
   static const myBookings = 'Đặt phòng của tôi';
   static const sent =
-      'Yêu cầu đặt phòng đã được gửi. TTTP sẽ kiểm tra và xác nhận.';
+      'Yêu cầu đặt phòng đã được gửi. TETRA sẽ kiểm tra và xác nhận.';
   static const cancellation =
       'Bạn có thể hủy trước 00:00 ngày nhận phòng theo giờ Việt Nam.';
   static const roleNames = {
