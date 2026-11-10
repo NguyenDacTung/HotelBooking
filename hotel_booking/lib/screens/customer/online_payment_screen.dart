@@ -21,6 +21,7 @@ class _OnlineState extends State<OnlinePaymentScreen>
     with WidgetsBindingObserver {
   List<Json> attempts = [];
   bool busy = false;
+  int _loadRevision = 0;
   String? error;
   @override
   void initState() {
@@ -41,23 +42,53 @@ class _OnlineState extends State<OnlinePaymentScreen>
   }
 
   Future<void> load() async {
+    final revision = ++_loadRevision;
     try {
       final d = await context.read<ApiService>().request(
         'GET',
         '/bookings/${widget.bookingId}/online-payments',
       ) as Json;
-      if (mounted) {
-        setState(() {
-          attempts = (d['items'] as List).cast<Json>();
-          error = null;
-        });
+      if (mounted && revision == _loadRevision) {
+        final rows = (d['items'] as List).cast<Json>();
+        // Finished attempts must not pin a later payment to their old
+        // idempotency key. Pending attempts are deliberately kept.
+        final account = context.read<SessionProvider>().user?['id'];
+        if (account != null) {
+          final prefs = await SharedPreferences.getInstance();
+          if (!mounted || revision != _loadRevision) return;
+          for (final provider in ['MOMO', 'VNPAY']) {
+            final hasFinished = rows.any((row) =>
+                row['provider'] == provider &&
+                ['FAILED', 'SUCCEEDED'].contains(row['state']));
+            final hasPending = rows.any((row) =>
+                row['provider'] == provider &&
+                ['CREATED', 'PENDING'].contains(row['state']));
+            if (hasFinished && !hasPending) {
+              await prefs.remove(
+                'tetra-payment-$account-${widget.bookingId}-$provider',
+              );
+            }
+          }
+        }
+        if (mounted && revision == _loadRevision) {
+          setState(() {
+            attempts = rows;
+            error = null;
+          });
+        }
       }
     } catch (e) {
-      if (mounted) setState(() => error = '$e');
+      if (mounted && revision == _loadRevision) {
+        setState(() => error = '$e');
+      }
     }
   }
 
   Future<void> create(String provider) async {
+    if (busy || attempts.any((a) =>
+        ['CREATED', 'PENDING'].contains(a['state']))) {
+      return;
+    }
     setState(() => busy = true);
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -104,6 +135,7 @@ class _OnlineState extends State<OnlinePaymentScreen>
   }
 
   Future<void> check(Json a) async {
+    if (busy) return;
     setState(() => busy = true);
     try {
       await context.read<ApiService>().request(

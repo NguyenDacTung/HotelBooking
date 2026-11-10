@@ -42,8 +42,16 @@ class SessionProvider extends ChangeNotifier {
       if (api.token != null) {
         user = await api.request('GET', '/users/me') as Json;
       }
+    } on ApiError catch (e) {
+      restoreError = e.toString();
+      user = null;
+      if (e.status == 401 || e.status == 403) {
+        api.token = null;
+        await storage.clear();
+      }
     } catch (e) {
       restoreError = e.toString();
+      user = null;
     } finally {
       restoring = false;
       notifyListeners();
@@ -101,19 +109,32 @@ class SessionProvider extends ChangeNotifier {
     } catch (_) {
       api.token = null;
       user = null;
+      await storage.clear();
       rethrow;
     }
     notifyListeners();
   }
 
   Future<void> logout() async {
-    await PushService.instance.disable(api);
+    // Local sign-out must succeed even when the push server/network is down.
     api.token = null;
     user = null;
     onSignedOut?.call();
     notifyListeners();
-    await storage.clear();
-    await clearPrivateFiles?.call();
+    try {
+      await storage.clear();
+    } finally {
+      try {
+        await PushService.instance.disable(api);
+      } catch (_) {
+        // Revoking a push device is best-effort; do not restore the session.
+      }
+      try {
+        await clearPrivateFiles?.call();
+      } catch (_) {
+        // An export cleanup failure must never keep a user signed in.
+      }
+    }
   }
 
   Future<void> social(String provider, String credential) async {

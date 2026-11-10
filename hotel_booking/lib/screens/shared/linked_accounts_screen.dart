@@ -28,6 +28,7 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
   }
 
   Future<void> load() async {
+    if (mounted) setState(() { busy = true; error = null; });
     try {
       final data = await context.read<ApiService>().request(
         'GET',
@@ -42,7 +43,8 @@ class _LinkedAccountsScreenState extends State<LinkedAccountsScreen> {
   }
 
   Future<void> act(String provider, bool linked) async {
-    setState(() => busy = true);
+    if (busy) return;
+    setState(() { busy = true; error = null; });
     try {
       if (linked) {
         await context.read<ApiService>().request(

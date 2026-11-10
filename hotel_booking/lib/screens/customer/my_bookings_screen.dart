@@ -66,6 +66,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                   ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
+                    isExpanded: true,
                     initialValue: state.status,
                     decoration: InputDecoration(
                       labelText: 'Trạng thái',
@@ -89,12 +90,10 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                         ),
                       ),
                     ],
-                    onChanged: state.loading
-                        ? null
-                        : (v) {
-                            state.status = v;
-                            load();
-                          },
+                    onChanged: (v) {
+                      state.status = v;
+                      load();
+                    },
                   ),
                   const SizedBox(height: 10),
                   SizedBox(
@@ -108,22 +107,20 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      onPressed: state.loading
-                          ? null
-                          : () async {
-                              final range = await showDateRangePicker(
-                                context: context,
-                                firstDate: DateTime(2020),
-                                lastDate: DateTime.now().add(
-                                  const Duration(days: 3650),
-                                ),
-                              );
-                              if (range != null && mounted) {
-                                state.from = dateOnly(range.start);
-                                state.to = dateOnly(range.end);
-                                load();
-                              }
-                            },
+                      onPressed: () async {
+                        final range = await showDateRangePicker(
+                          context: context,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime.now().add(
+                            const Duration(days: 3650),
+                          ),
+                        );
+                        if (range != null && mounted) {
+                          state.from = dateOnly(range.start);
+                          state.to = dateOnly(range.end);
+                          load();
+                        }
+                      },
                       icon: const Icon(Icons.date_range, size: 18),
                       label: Text(
                         state.from == null
