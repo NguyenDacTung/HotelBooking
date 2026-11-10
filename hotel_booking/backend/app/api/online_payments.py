@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import Field
 from sqlalchemy import select,text
 from sqlalchemy.orm import Session
-from app.models import PaymentAttempt,Payment,Booking,Account,Notification
+from app.models import PaymentAttempt,Payment,Booking,Account,Notification,SandboxRefund
 from app.schemas.requests import Input
 from app.db.session import get_db
 from app.core.security import current,customer
@@ -51,11 +51,15 @@ def settle(db,key,state,transaction):
 
 @router.post('/bookings/{key}/online-payments')
 def create(key:UUID,data:Create,request:Request,user=Depends(customer),db:Session=Depends(get_db)):
+    db.execute(text('SELECT pg_advisory_xact_lock(hashtextextended(:key,0))'), {'key': str(data.request_id)})
     b=visible_booking(db,key,user);lock_room(db,b.ma_phong);b=visible_booking(db,key,user,True)
     old=db.scalar(select(PaymentAttempt).where(PaymentAttempt.request_id==data.request_id))
     if old:
         if old.ma_pdp!=key or old.provider!=data.provider:fail(409,'REQUEST_CONFLICT','Mã yêu cầu đã được dùng')
         return dto(old)
+    if (db.scalar(select(Payment.id).where(Payment.request_id == data.request_id)) or
+            db.scalar(select(SandboxRefund.id).where(SandboxRefund.request_id == data.request_id))):
+        fail(409,'REQUEST_CONFLICT','Mã yêu cầu đã được dùng cho giao dịch khác')
     active=db.scalar(select(PaymentAttempt).where(PaymentAttempt.ma_pdp==key,PaymentAttempt.state.in_(('CREATED','PENDING'))))
     if active:return dto(active)
     if not gateways.configured(data.provider):fail(503,'PAYMENT_NOT_CONFIGURED','Cổng thanh toán chưa được cấu hình')

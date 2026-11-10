@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.errors import handlers
 from app.api import auth, catalog, bookings, staff
 from app.api import upgrade, reports, social, stays, recovery, devices
-from app.api import reviews, integration, online_payments, biometric
+from app.api import reviews, integration, online_payments, biometric, online_refunds
 
 
 @asynccontextmanager
@@ -38,7 +38,7 @@ async def lifespan(app):
 
 app = FastAPI(title='Khách sạn • Đặt phòng', lifespan=lifespan)
 handlers(app)
-for router in (auth.router, catalog.router, bookings.router, staff.router, upgrade.router, reports.router, social.router,stays.router,recovery.router,devices.router,reviews.router,integration.router,online_payments.router,biometric.router):
+for router in (auth.router, catalog.router, bookings.router, staff.router, upgrade.router, reports.router, social.router,stays.router,recovery.router,devices.router,reviews.router,integration.router,online_payments.router,biometric.router,online_refunds.router):
     app.include_router(router)
 
 

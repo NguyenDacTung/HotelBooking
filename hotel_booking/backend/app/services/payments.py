@@ -46,7 +46,10 @@ def record(db, user, data, booking_id=None, original_id=None):
         db.commit()
         return existing
     totals = balance(db, booking)
-    from app.models import PaymentAttempt
+    from app.models import PaymentAttempt, SandboxRefund
+    if (db.scalar(select(PaymentAttempt.id).where(PaymentAttempt.request_id == data.request_id)) or
+            db.scalar(select(SandboxRefund.id).where(SandboxRefund.request_id == data.request_id))):
+        fail(409,'REQUEST_CONFLICT','Mã yêu cầu đã được dùng cho giao dịch online')
     if db.scalar(select(PaymentAttempt.id).where(PaymentAttempt.ma_pdp==booking_id,PaymentAttempt.state.in_(('CREATED','PENDING'))).limit(1)):
         fail(409,'ONLINE_PAYMENT_PENDING','Có thanh toán online chưa được đối soát; kiểm tra kết quả trước khi thu/hoàn thủ công')
     if original and original.environment!='production':

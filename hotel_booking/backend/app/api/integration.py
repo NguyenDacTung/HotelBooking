@@ -32,7 +32,8 @@ def capabilities():
     return {'payments':{p.lower():feature(configured(p),c.payment_environment) for p in ('MOMO','VNPAY')},
         'social_login':{'google':feature(c.google_client_id),'facebook':feature(c.facebook_app_id and c.facebook_app_secret)},
         'push':feature(c.firebase_project_id and c.firebase_credentials),'recovery':feature(c.smtp_host and c.smtp_from),
-        'media_upload':feature(c.persistent_media_enabled),'online_refund':feature(False)}
+        'media_upload':feature(c.persistent_media_enabled),
+        'online_refund':feature(c.payment_environment=='sandbox' and any(configured(p) for p in ('MOMO','VNPAY')), 'sandbox')}
 
 class PublicSettings(Input):
     video_url:str=Field('',max_length=2000)
