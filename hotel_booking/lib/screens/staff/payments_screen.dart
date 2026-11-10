@@ -12,6 +12,7 @@ import '../../services/api_service.dart';
 import '../../providers/session_provider.dart';
 import '../../core/config.dart';
 import '../../widgets/common.dart';
+import 'sandbox_refund_screen.dart';
 
 class PaymentsScreen extends StatefulWidget {
   final String bookingId;
@@ -419,6 +420,24 @@ class _PaymentsScreenState extends State<PaymentsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (session.manager)
+              OutlinedButton.icon(
+                onPressed: busy
+                    ? null
+                    : () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => SandboxRefundScreen(
+                              bookingId: widget.bookingId,
+                            ),
+                          ),
+                        );
+                        if (mounted) await load();
+                      },
+                icon: const Icon(Icons.currency_exchange),
+                label: const Text('Hoàn tiền online sandbox'),
+              ),
             if (pending != null)
               Card(
                 child: Padding(

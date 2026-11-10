@@ -5,6 +5,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 CLIENT_KEYS = frozenset({
+    'API_BASE_URL',
     'GOOGLE_SERVER_CLIENT_ID', 'FACEBOOK_ENABLED',
     'TTTP_FACEBOOK_APP_ID', 'TTTP_FACEBOOK_CLIENT_TOKEN',
     'FIREBASE_API_KEY', 'FIREBASE_APP_ID',
@@ -23,6 +24,16 @@ def load_client(path):
                 raise ValueError('CLIENT_BOOLEAN_REQUIRED')
         elif not isinstance(value, str) or value != value.strip():
             raise ValueError('CLIENT_STRING_REQUIRED')
+    if data.get('API_BASE_URL'):
+        try:
+            url = urlparse(data['API_BASE_URL'])
+            valid = (url.scheme in ('http', 'https') and url.hostname and not url.username
+                     and not url.password and not url.query and not url.fragment)
+            _ = url.port
+        except ValueError:
+            valid = False
+        if not valid:
+            raise ValueError('CLIENT_API_URL_INVALID')
     return data
 
 

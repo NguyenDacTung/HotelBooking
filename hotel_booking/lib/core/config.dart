@@ -1,11 +1,9 @@
 import 'package:intl/intl.dart';
 
-const apiBaseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  // The installed development app normally uses Wi-Fi. USB/emulator launch
-  // profiles override this explicitly; an IDE run without defines stays on LAN.
-  defaultValue: 'http://192.168.2.2:8000',
-);
+import 'client_config.dart';
+
+String get apiBaseUrl =>
+    ClientConfig.string('API_BASE_URL', fallback: 'http://10.0.2.2:8000');
 const demoMode = bool.fromEnvironment('DEMO_MODE', defaultValue: false);
 String dateOnly(DateTime value) => DateFormat('yyyy-MM-dd').format(value);
 String money(num value) => NumberFormat.currency(

@@ -1,4 +1,4 @@
-param([string]$DeviceId = 'R58T801R8BD')
+param([string]$DeviceId = '')
 $ErrorActionPreference = 'Stop'
 $projectPath = Split-Path -Parent $PSScriptRoot
 $backendPath = Join-Path $projectPath 'backend'
@@ -28,6 +28,13 @@ if (-not (Test-Api)) {
     if (-not (Test-Api)) { throw 'Backend/PostgreSQL is unavailable. Check backend/server.stderr.log. Database was not reset.' }
 }
 if (-not (Test-Path -LiteralPath $adbPath)) { throw 'Android platform-tools/adb.exe not found.' }
+if (-not $DeviceId) {
+    $output = & $adbPath devices
+    if ($LASTEXITCODE -ne 0) { throw 'Unable to list Android devices.' }
+    $devices = @($output | Where-Object { $_ -match '^\S+\s+device$' } | ForEach-Object { ($_ -split '\s+')[0] })
+    if ($devices.Count -ne 1) { throw 'Connect and authorize one phone, or supply -DeviceId when multiple devices are connected.' }
+    $DeviceId = $devices[0]
+}
 $deviceState = & $adbPath -s $DeviceId get-state 2>$null
 if ($LASTEXITCODE -ne 0 -or $deviceState -ne 'device') { throw 'Phone not ready: unlock it and authorize USB debugging, then retry.' }
 & $adbPath -s $DeviceId reverse tcp:8000 tcp:8000

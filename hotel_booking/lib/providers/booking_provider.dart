@@ -36,9 +36,9 @@ class BookingProvider extends ChangeNotifier {
     try {
       final result = await repository.bookings(staff, {
         'page': next,
-        if (requestedStatus != null) 'trang_thai': requestedStatus,
-        if (requestedFrom != null) 'ngay_nhan_tu': requestedFrom,
-        if (requestedTo != null) 'ngay_nhan_den': requestedTo,
+        'trang_thai': ?requestedStatus,
+        'ngay_nhan_tu': ?requestedFrom,
+        'ngay_nhan_den': ?requestedTo,
       });
       if (_disposed || version != _loadVersion) return;
       items = more ? [...items, ...result.items] : result.items;

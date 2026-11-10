@@ -77,3 +77,18 @@ def test_client_file_accepts_public_settings_and_windows_bom(tmp_path):
     path = tmp_path / 'client.json'
     path.write_text(json.dumps({'GOOGLE_SERVER_CLIENT_ID': '', 'FACEBOOK_ENABLED': False}), encoding='utf-8-sig')
     assert load_client(path)['FACEBOOK_ENABLED'] is False
+
+
+@pytest.mark.parametrize('url', ['', 'http://127.0.0.1:8000', 'http://10.0.2.2:8000', 'https://api.example.org'])
+def test_client_api_url_accepts_auto_usb_emulator_and_hosted(tmp_path, url):
+    path = tmp_path / 'client.json'
+    path.write_text(json.dumps({'API_BASE_URL': url}))
+    assert load_client(path)['API_BASE_URL'] == url
+
+
+@pytest.mark.parametrize('url', ['file:///local', 'http://user:private@host', 'https://host?key=private', 'https://host/#private', 'http://host:invalid'])
+def test_client_api_url_rejects_invalid_or_embedded_credentials(tmp_path, url):
+    path = tmp_path / 'client.json'
+    path.write_text(json.dumps({'API_BASE_URL': url}))
+    with pytest.raises(ValueError, match='CLIENT_API_URL_INVALID'):
+        load_client(path)

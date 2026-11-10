@@ -2,15 +2,12 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 
 import 'api_service.dart';
+import '../core/client_config.dart';
 
 class SocialLoginService {
-  static const googleClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
-  );
-  static const facebookEnabled = bool.fromEnvironment(
-    'FACEBOOK_ENABLED',
-    defaultValue: false,
-  );
+  static String get googleClientId =>
+      ClientConfig.string('GOOGLE_SERVER_CLIENT_ID');
+  static bool get facebookEnabled => ClientConfig.facebookEnabled;
   static bool _initialized = false;
   Future<String> credential(String provider) async {
     if (provider == 'google') {

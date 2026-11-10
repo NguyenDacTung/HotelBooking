@@ -4,15 +4,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'api_service.dart';
+import '../core/client_config.dart';
 
 /// Firebase is opt-in; builds without service credentials work normally.
 class PushService {
-  static const apiKey = String.fromEnvironment('FIREBASE_API_KEY');
-  static const appId = String.fromEnvironment('FIREBASE_APP_ID');
-  static const senderId = String.fromEnvironment(
-    'FIREBASE_MESSAGING_SENDER_ID',
-  );
-  static const projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
+  static String get apiKey => ClientConfig.string('FIREBASE_API_KEY');
+  static String get appId => ClientConfig.string('FIREBASE_APP_ID');
+  static String get senderId =>
+      ClientConfig.string('FIREBASE_MESSAGING_SENDER_ID');
+  static String get projectId => ClientConfig.string('FIREBASE_PROJECT_ID');
   static bool get configured =>
       apiKey.isNotEmpty &&
       appId.isNotEmpty &&
@@ -26,7 +26,7 @@ class PushService {
   static Future<void> initialize() async {
     if (!configured) return;
     await Firebase.initializeApp(
-      options: const FirebaseOptions(
+      options: FirebaseOptions(
         apiKey: apiKey,
         appId: appId,
         messagingSenderId: senderId,

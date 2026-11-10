@@ -1,5 +1,20 @@
 # TETRA Hotel — cập nhật tích hợp 18/10/2026
 
+## Chạy bằng `flutter run` — USB và Android Emulator
+
+Cấu hình dịch vụ một lần trong `config/flutter.local.json` (tạo từ `config/flutter.example.json`) và `backend/.env`. Giữ `API_BASE_URL` trống hoặc bỏ trường này để tự chọn kết nối. Sau khi đã chuẩn bị `.venv`, `.env` và database, chạy từ thư mục gốc trong hai terminal:
+
+```powershell
+# Terminal 1: backend localhost.
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\start_backend.ps1
+# Terminal 2: mở emulator hoặc kết nối điện thoại đã cho phép USB debugging.
+flutter run
+```
+
+Android build tự nạp cấu hình public cho cả Dart và SDK native, không cần `--dart-define-from-file` hoặc script riêng. Emulator dùng `10.0.2.2:8000`; điện thoại thật dùng `127.0.0.1:8000`, build debug tự tạo ADB reverse cho điện thoại USB đã được cấp quyền. Nếu có nhiều thiết bị, chọn Android trong danh sách của Flutter; có thể dùng `flutter run -d <DEVICE_ID>` để chọn trực tiếp. Giữ cáp USB khi dùng app; sau khi rút/cắm cáp, dừng phiên cũ và chạy lại `flutter run` để thiết lập lại cổng. Không cần IP LAN hoặc mở firewall.
+
+Backend phải chạy riêng; `flutter run` không tự khởi động backend hoặc cấu hình tài khoản dịch vụ. Google/Facebook/Firebase/SMTP/MoMo/VNPAY cần cấu hình hợp lệ; thanh toán còn cần callback HTTPS công khai. Đổi file cấu hình thì dừng app và chạy lại `flutter run` (hot reload/restart không build lại native). Xem [hướng dẫn cấu hình](docs/service_configuration.md) và [báo cáo kiểm thử](docs/configuration_verification.md). Luồng hoàn online chỉ hỗ trợ **toàn phần sandbox**. Các hướng dẫn LAN cũ bên dưới là phương án tùy chọn; điền URL hiện tại vào `API_BASE_URL` trong file local hoặc dùng `--dart-define=API_BASE_URL=...` để ghi đè.
+
 Trong app dùng tên **TETRA**, nhãn Android **TETRA Hotel**; applicationId vẫn `com.example.hotel_booking`. PostgreSQL là database duy nhất của backend; không reset dữ liệu. Các khóa kỹ thuật/email demo có chữ TTTP được giữ để tương thích bản cũ.
 
 - [Màn hình và điểm vào](docs/screens.md) · [Quyết định điều chỉnh đặc tả](docs/integration_decisions.md) · [Thư viện/phiên bản](docs/integration_inventory.md) · [Ánh xạ học phần](docs/course_mapping.md)
