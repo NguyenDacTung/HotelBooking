@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../core/config.dart';
 import '../../models/models.dart';
 import '../../providers/session_provider.dart';
+import '../../providers/booking_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/common.dart';
 import '../../widgets/booking_operations.dart';
@@ -124,6 +125,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       if (mounted) {
         message(context, 'Đã cập nhật đặt phòng');
         await load();
+        if (mounted) {
+          final bookings = Provider.of<BookingProvider?>(context, listen: false);
+          await bookings?.load(context.read<SessionProvider>().staff);
+        }
         if (mounted) await context.read<NotificationsProvider>().refresh();
       }
     } catch (e) {

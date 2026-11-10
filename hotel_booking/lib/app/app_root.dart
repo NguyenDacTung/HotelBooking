@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../services/export_service.dart';
 import '../services/app_feedback.dart';
 import '../providers/capabilities_provider.dart';
@@ -103,14 +105,27 @@ class HotelApp extends StatelessWidget {
             session.onSignedOut = () {
               hotelNavigatorKey.currentState?.popUntil((r) => r.isFirst);
             };
+            var handlingUnauthorized = false;
             api.onUnauthorized = () async {
-              await session.logout();
-              final nav = hotelNavigatorKey.currentState;
-              if (nav != null) {
-                nav.popUntil((r) => r.isFirst);
-                nav.push(
-                  MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+              if (handlingUnauthorized) return;
+              handlingUnauthorized = true;
+              try {
+                // During restore there is no authenticated screen to leave.
+                final wasSignedIn = session.user != null;
+                await session.logout();
+                if (!wasSignedIn) return;
+                final nav = hotelNavigatorKey.currentState;
+                if (nav == null || !nav.mounted) return;
+                nav.popUntil((route) => route.isFirst);
+                unawaited(
+                  nav.push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const LoginScreen(),
+                    ),
+                  ),
                 );
+              } finally {
+                handlingUnauthorized = false;
               }
             };
             if (!demoMode) session.restore();

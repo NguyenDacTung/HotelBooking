@@ -51,10 +51,11 @@ class ApiService {
   }) async {
     final uri = Uri.parse('$baseUrl$path')
         .replace(queryParameters: query?.map((k, v) => MapEntry(k, '$v')));
+    final requestToken = token;
     final request = http.Request(method, uri)
       ..headers.addAll({
         'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
+        if (requestToken != null) 'Authorization': 'Bearer $requestToken',
       });
     if (body != null) request.body = jsonEncode(body);
     late final http.Response response;
@@ -90,7 +91,7 @@ class ApiService {
     }
     _trace(method, path, 'HTTP ${response.statusCode}');
     // Decoding and session callbacks must not be classified as transport errors.
-    return _decode(response, method: method, path: path);
+    return _decode(response, method: method, path: path, requestToken: requestToken);
   }
 
   Future<dynamic> upload(
@@ -125,9 +126,14 @@ class ApiService {
     http.Response response, {
     String? method,
     String? path,
+    String? requestToken,
   }) async {
     final status = response.statusCode;
-    if (status == 401 && token != null) {
+    // Only a request carrying the *current* authenticated token can expire
+    // the session. Anonymous 401s and replies from an older session cannot
+    // log out a new login. Clear the token synchronously to make this single-shot.
+    if (status == 401 && requestToken != null && requestToken == token) {
+      token = null;
       try {
         await onUnauthorized?.call();
       } catch (_) {

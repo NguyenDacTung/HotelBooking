@@ -57,9 +57,12 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
     super.dispose();
   }
 
+  int _quoteRevision = 0;
   Future<void> loadQuote() async {
+    final revision = ++_quoteRevision;
     setState(() {
       quoting = true;
+      quote = null;
       error = null;
     });
     try {
@@ -68,15 +71,22 @@ class _BookingReviewScreenState extends State<BookingReviewScreen> {
         '/rooms/${widget.room.id}/quote',
         body: {'ngay_nhan': start, 'ngay_tra': end, 'so_khach': guests},
       ) as Json;
-      if (mounted) setState(() => quote = result);
+      if (mounted && revision == _quoteRevision) {
+        setState(() => quote = result);
+      }
     } catch (e) {
-      if (mounted) setState(() => error = '$e');
+      if (mounted && revision == _quoteRevision) {
+        setState(() => error = '$e');
+      }
     } finally {
-      if (mounted) setState(() => quoting = false);
+      if (mounted && revision == _quoteRevision) {
+        setState(() => quoting = false);
+      }
     }
   }
 
   Future<void> submit() async {
+    if (busy || quoting || uncertain || quote?['kha_dung'] != true) return;
     if (!form.currentState!.validate()) return;
     setState(() {
       busy = true;

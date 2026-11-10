@@ -9,9 +9,11 @@ class SearchProvider extends ChangeNotifier {
   final HotelRepository repository;
   SearchProvider(this.repository);
   bool _disposed = false;
+  int _revision = 0;
   @override
   void dispose() {
     _disposed = true;
+    _revision++;
     super.dispose();
   }
 
@@ -31,6 +33,12 @@ class SearchProvider extends ChangeNotifier {
     maxPrice: maxPrice,
   );
   void setCriteria(SearchCriteria value) {
+    _revision++;
+    rooms = [];
+    total = 0;
+    page = 1;
+    loading = false;
+    error = null;
     start = value.start;
     end = value.end;
     guests = value.guests;
@@ -41,9 +49,12 @@ class SearchProvider extends ChangeNotifier {
   }
 
   Future<void> search({bool more = false}) async {
-    if (loading || _disposed) return;
+    if (_disposed) return;
+    if (more && (loading || rooms.length >= total)) return;
+    final revision = ++_revision;
     final validation = criteria.validate();
     if (validation != null) {
+      loading = false;
       error = validation;
       notifyListeners();
       return;
@@ -62,15 +73,20 @@ class SearchProvider extends ChangeNotifier {
         if (minPrice != null) 'gia_min': minPrice,
         if (maxPrice != null) 'gia_max': maxPrice,
       });
+      if (_disposed || revision != _revision) return;
       rooms = more ? [...rooms, ...result.items] : result.items;
       total = result.total;
       page = next;
     } catch (e) {
+      if (_disposed || revision != _revision) return;
       error = e.toString();
       if (!more) rooms = [];
+    } finally {
+      if (!_disposed && revision == _revision) {
+        loading = false;
+        notifyListeners();
+      }
     }
-    loading = false;
-    if (!_disposed) notifyListeners();
   }
 }
 
