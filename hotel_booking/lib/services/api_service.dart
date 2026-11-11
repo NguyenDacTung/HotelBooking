@@ -38,10 +38,11 @@ class ApiService {
 
   ApiService({
     http.Client? client,
-    this.baseUrl = apiBaseUrl,
+    String? baseUrl,
     this.requestTimeout = const Duration(seconds: 20),
-  }) : client = client ?? http.Client() {
-    if (kDebugMode) debugPrint('[TETRA API] baseUrl=$baseUrl');
+  }) : baseUrl = baseUrl ?? apiBaseUrl,
+       client = client ?? http.Client() {
+    if (kDebugMode) debugPrint('[TETRA API] baseUrl=${this.baseUrl}');
   }
   Future<dynamic> request(
     String method,
@@ -91,7 +92,12 @@ class ApiService {
     }
     _trace(method, path, 'HTTP ${response.statusCode}');
     // Decoding and session callbacks must not be classified as transport errors.
-    return _decode(response, method: method, path: path, requestToken: requestToken);
+    return _decode(
+      response,
+      method: method,
+      path: path,
+      requestToken: requestToken,
+    );
   }
 
   Future<dynamic> upload(

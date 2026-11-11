@@ -73,3 +73,11 @@ Nguồn quy tắc: [business_rules.md](business_rules.md). Đặc tả đầy đ
 | POST / DELETE | `/devices` | Gắn/hủy token thiết bị vào tài khoản/phiên đang xác thực |
 
 Ảnh chỉ upload theo phòng. `/room-types` không còn hinh_anh; `/rooms` và `/staff/rooms` trả hinh_anh của từng phòng. Booking chi tiết có phu_thu, chinh_sach, nhat_ky, nhan_phong_luc, tra_phong_luc, giu_cho_den, tien_phong, tong_phu_thu, tong_thanh_toan và số dư. GET quote có chinh_sach để khách đọc trước khi đặt. Không có endpoint gateway thanh toán giả.
+
+## Hoàn toàn phần sandbox (migration 0009)
+
+- `POST /admin/online-payments/{attempt_id}/refunds`: chỉ quản lý; body `{"request_id":"<UUID>"}`. Server lấy toàn bộ số tiền của giao dịch sandbox đã thành công, không nhận số tiền từ client. Merchant phải ở sandbox và được cấu hình.
+- `POST /admin/online-refunds/{refund_id}/query`: chỉ quản lý; truy vấn kết quả khi chưa xác định. Không gửi lại lệnh hoàn. Trạng thái cuối trả lại bản ghi hiện có.
+- `GET /bookings/{booking_id}/online-refunds`: chủ đơn hoặc nhân viên có quyền xem đơn; trả `items` gồm `id`, `attempt_id`, `state`, `amount`, `environment`, `note`.
+- DTO create/query có cùng các trường trên. Trạng thái `CREATED`, `PENDING`, `SUCCEEDED`, `FAILED`. Request UUID trùng trả cùng kết quả; UUID dùng cho giao dịch/người khởi tạo khác trả 409. Khoản thu đã hoàn hoặc chưa đối soát chặn yêu cầu hoàn mới.
+- Không cấu hình/khác sandbox: 503; chưa thanh toán thành công/thiếu thu gốc: 409; timeout hoặc thiếu bằng chứng kết quả: 503 `REFUND_UNCERTAIN`, giữ bản ghi để đối soát. Khoản hoàn chỉ ghi vào sổ sandbox sau xác minh thành công, không thay đổi công nợ/báo cáo production. Hoàn từng phần và production không thuộc API này.

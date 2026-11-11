@@ -1,10 +1,16 @@
 {
   "version": "2.0.0",
   "tasks": [{
+    "label": "TETRA: start localhost backend",
+    "type": "process",
+    "command": "powershell.exe",
+    "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/start_backend.ps1"],
+    "problemMatcher": []
+  }, {
     "label": "TTTP: start WiFi backend",
     "type": "process",
     "command": "powershell.exe",
-    "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/start_backend.ps1", "-Lan", "-ExpectedLanAddress", "192.168.31.112"],
+    "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/start_backend.ps1", "-Lan", "-InterfaceAlias", "${input:networkInterface}"],
     "problemMatcher": []
   }, {
     "label": "TTTP: start backend and USB API",
@@ -12,5 +18,11 @@
     "command": "powershell.exe",
     "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/scripts/start_phone_api.ps1"],
     "problemMatcher": []
+  }],
+  "inputs": [{
+    "id": "networkInterface",
+    "type": "promptString",
+    "description": "Private network interface name (check Get-NetConnectionProfile)",
+    "default": "Wi-Fi"
   }]
 }

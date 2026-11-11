@@ -368,3 +368,22 @@ class PaymentAttempt(Base):
         CheckConstraint("state IN ('CREATED','PENDING','SUCCEEDED','FAILED')",name='ck_attempt_state'),
         Index('uq_attempt_provider_transaction','provider','environment','provider_transaction',unique=True),
         Index('uq_payment_attempt_active','ma_pdp',unique=True,postgresql_where=text("state IN ('CREATED','PENDING')")),)
+
+
+class SandboxRefund(Base):
+    __tablename__ = 'hoan_tien_sandbox'
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    attempt_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('phien_thanh_toan.id'), index=True)
+    request_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), unique=True)
+    reference: Mapped[str] = mapped_column(String(80), unique=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 0))
+    created_by: Mapped[uuid.UUID] = mapped_column(ForeignKey('tai_khoan.id'))
+    state: Mapped[str] = mapped_column(String(24), server_default='CREATED')
+    provider_transaction: Mapped[str | None] = mapped_column(String(100))
+    ngay_tao: Mapped[datetime] = stamp()
+    __table_args__ = (
+        CheckConstraint('amount > 0'),
+        CheckConstraint("state IN ('CREATED','PENDING','SUCCEEDED','FAILED')"),
+        Index('uq_sandbox_refund_reserved', 'attempt_id', unique=True,
+              postgresql_where=text("state IN ('CREATED','PENDING','SUCCEEDED')")),
+    )

@@ -6,6 +6,8 @@ Không gửi mật khẩu, JWT, khóa merchant hoặc JSON tài khoản dịch v
 
 `GET /app/capabilities` là nguồn trạng thái máy chủ, chỉ có enabled/configured/environment/reason_code. Flutter phân biệt đang tải, lỗi tải và chưa cấu hình, đồng thời yêu cầu cấu hình SDK phía client cho social/push. Cấu hình xong phải restart backend; cấu hình build client cần build/cài lại. Trạng thái configured chỉ cho biết đủ trường cấu hình, không khẳng định đã thông mạng hoặc được merchant duyệt.
 
+Android tự đọc cấu hình public trong `config/flutter.local.json` khi chạy `flutter run`; Dart và SDK native dùng chung dữ liệu. Để `API_BASE_URL` trống hoặc bỏ trường này cho USB/emulator tự chọn kết nối. Backend vẫn chạy riêng; xem [hướng dẫn chạy và cấu hình](service_configuration.md).
+
 ## MoMo
 
 - Tạo tài khoản merchant và nhận partner code/access key/secret key đúng môi trường.
@@ -26,7 +28,7 @@ Không gửi mật khẩu, JWT, khóa merchant hoặc JSON tài khoản dịch v
 
 Khách vào hóa đơn → Thanh toán online → chọn cổng. Số tiền do server tính. Lưu request_id theo tài khoản/đơn/cổng để timeout vẫn dùng lại cùng yêu cầu. Kiểm tra kết quả gọi query server; không tin màn hình trình duyệt hoặc lời khai client. Attempt CREATED/PENDING khóa thu/hoàn thủ công, đổi phòng/ngày và hoàn tất trả phòng. Hết hạn đường dẫn không tự chứng minh giao dịch thất bại; cần kết quả xác minh. Không xóa attempt để thu lại.
 
-Sandbox ghi dữ liệu thử có nhãn riêng và không thanh toán hóa đơn thật. Chỉ production đã xác minh chữ ký/IPN/query mới tính thực thu. Hoàn online tự động chưa cấu hình; hoàn thủ công dành cho khoản đã hoàn thật, không bấm để giả lập chuyển tiền.
+Sandbox ghi dữ liệu thử có nhãn riêng và không thanh toán hóa đơn thật. Chỉ production đã xác minh chữ ký/IPN/query mới tính thực thu. Luồng hoàn toàn phần sandbox cho MoMo/VNPAY nằm ở Quản lý → Sổ thu/hoàn tiền → Hoàn tiền online sandbox, cần merchant sandbox và migration `0009`. Timeout phải giữ yêu cầu để đối soát; ghi hoàn sandbox không tác động tiền thật. Hoàn production/từng phần qua cổng chưa được hỗ trợ; hoàn thủ công dành cho khoản đã hoàn thật, không bấm để giả lập chuyển tiền.
 
 ## Ảnh và triển khai máy chủ
 

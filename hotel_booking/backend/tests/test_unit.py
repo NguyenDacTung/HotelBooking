@@ -73,7 +73,7 @@ def test_password_hash():
 
 
 def test_postgresql_metadata():
-    assert len(Base.metadata.tables) == 27
+    assert len(Base.metadata.tables) == 28
     assert {'thiet_bi_sinh_trac', 'thu_thach_sinh_trac'} <= Base.metadata.tables.keys()
     sql = str(CreateTable(Base.metadata.tables['phieu_dat_phong']).compile(dialect=postgresql.dialect()))
     assert 'EXCLUDE USING gist' in sql and 'daterange' in sql

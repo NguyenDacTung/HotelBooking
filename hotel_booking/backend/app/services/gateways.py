@@ -93,3 +93,74 @@ def query(attempt,ip):
     if not hmac.compare_digest(str(r.get('vnp_SecureHash','')).lower(),signature) or r.get('vnp_TmnCode')!=c.vnpay_tmn_code or r.get('vnp_TxnRef')!=attempt.reference or int(r.get('vnp_Amount',-1))!=int(attempt.amount)*100:raise ValueError('QUERY_MISMATCH')
     status=r.get('vnp_TransactionStatus')
     return ('SUCCEEDED' if r.get('vnp_ResponseCode')=='00' and status=='00' else 'FAILED' if r.get('vnp_ResponseCode')=='00' and status=='02' else 'PENDING',str(r.get('vnp_TransactionNo','')))
+
+
+def refund_transport(refund, attempt, ip, *, query_only=False):
+    """Provider refund/query transport. Sandbox only, never infer success from acceptance."""
+    c = settings()
+    if c.payment_environment != 'sandbox' or attempt.environment != 'sandbox':
+        raise ValueError('SANDBOX_ONLY')
+    if attempt.provider == 'MOMO':
+        request_id = uuid4().hex if query_only else str(refund.request_id)
+        data = {'partnerCode': c.momo_partner_code, 'orderId': refund.reference,
+                'requestId': request_id, 'lang': 'vi'}
+        if query_only:
+            keys = ('accessKey', 'orderId', 'partnerCode', 'requestId')
+        else:
+            data.update(amount=int(refund.amount), transId=int(attempt.provider_transaction), description='TETRA sandbox refund')
+            keys = ('accessKey', 'amount', 'description', 'orderId', 'partnerCode', 'requestId', 'transId')
+        data['signature'] = momo_sign(data, keys)
+        with httpx.Client(timeout=35, follow_redirects=False) as client:
+            response = client.post(c.momo_endpoint.rstrip('/') + ('/refund/query' if query_only else '/refund'), json=data)
+            response.raise_for_status()
+            result = response.json()
+        if result.get('partnerCode') != c.momo_partner_code or result.get('requestId') != request_id:
+            raise ValueError('REFUND_MISMATCH')
+        if query_only:
+            if result.get('resultCode') != 0:
+                return 'PENDING', ''
+            matches = [row for row in result.get('refundTrans', []) if row.get('orderId') == refund.reference]
+            if len(matches) != 1:
+                return 'PENDING', ''
+            result = matches[0]
+        if result.get('orderId') != refund.reference or int(result.get('amount', -1)) != int(refund.amount):
+            raise ValueError('REFUND_MISMATCH')
+        # Unrecognized or processing codes remain reserved for later reconciliation.
+        state = 'SUCCEEDED' if result.get('resultCode') == 0 else 'FAILED' if result.get('resultCode') in (1002, 1003, 1005, 1006) else 'PENDING'
+        return state, str(result.get('transId', ''))
+    request_id = uuid4().hex if query_only else refund.request_id.hex
+    data = {'vnp_RequestId': request_id, 'vnp_Version': '2.1.0',
+            'vnp_Command': 'querydr' if query_only else 'refund', 'vnp_TmnCode': c.vnpay_tmn_code,
+            'vnp_TxnRef': attempt.reference,
+            'vnp_TransactionDate': attempt.ngay_tao.astimezone(VN).strftime('%Y%m%d%H%M%S'),
+            'vnp_CreateDate': refund.ngay_tao.astimezone(VN).strftime('%Y%m%d%H%M%S') if not query_only else now().astimezone(VN).strftime('%Y%m%d%H%M%S'),
+            'vnp_IpAddr': ip, 'vnp_OrderInfo': 'TETRA sandbox refund'}
+    keys = ('vnp_RequestId', 'vnp_Version', 'vnp_Command', 'vnp_TmnCode', 'vnp_TxnRef',
+            'vnp_TransactionDate', 'vnp_CreateDate', 'vnp_IpAddr', 'vnp_OrderInfo')
+    if not query_only:
+        data.update(vnp_TransactionType='02', vnp_Amount=int(refund.amount)*100,
+                    vnp_TransactionNo=attempt.provider_transaction, vnp_CreateBy=refund.created_by.hex)
+        keys = ('vnp_RequestId', 'vnp_Version', 'vnp_Command', 'vnp_TmnCode', 'vnp_TransactionType',
+                'vnp_TxnRef', 'vnp_Amount', 'vnp_TransactionNo', 'vnp_TransactionDate',
+                'vnp_CreateBy', 'vnp_CreateDate', 'vnp_IpAddr', 'vnp_OrderInfo')
+    data['vnp_SecureHash'] = digest(c.vnpay_hash_secret, '|'.join(str(data[k]) for k in keys), 'sha512')
+    with httpx.Client(timeout=35, follow_redirects=False) as client:
+        response = client.post(c.vnpay_query_url, json=data)
+        response.raise_for_status()
+        result = response.json()
+    keys = ('vnp_ResponseId', 'vnp_Command', 'vnp_ResponseCode', 'vnp_Message', 'vnp_TmnCode',
+            'vnp_TxnRef', 'vnp_Amount', 'vnp_BankCode', 'vnp_PayDate', 'vnp_TransactionNo',
+            'vnp_TransactionType', 'vnp_TransactionStatus', 'vnp_OrderInfo')
+    if query_only:
+        keys += ('vnp_PromotionCode', 'vnp_PromotionAmount')
+    signature = digest(c.vnpay_hash_secret, '|'.join(str(result.get(k, '')) for k in keys), 'sha512')
+    if (not hmac.compare_digest(str(result.get('vnp_SecureHash', '')).lower(), signature)
+            or result.get('vnp_Command') != data['vnp_Command']
+            or result.get('vnp_TmnCode') != c.vnpay_tmn_code or result.get('vnp_TxnRef') != attempt.reference
+            or int(result.get('vnp_Amount', -1)) != int(refund.amount)*100):
+        raise ValueError('REFUND_MISMATCH')
+    if result.get('vnp_ResponseCode') != '00' or result.get('vnp_TransactionType') != '02':
+        return 'PENDING', ''  # A successful original purchase is not a successful refund.
+    status = result.get('vnp_TransactionStatus')
+    return ('SUCCEEDED' if status == '00' else 'FAILED' if status in ('02', '09') else 'PENDING',
+            str(result.get('vnp_TransactionNo', '')))
